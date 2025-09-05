@@ -84,7 +84,7 @@ export const ShopImageCarouselForm = ({ carouselItem, onClose, onSave }: ShopIma
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{carouselItem ? 'Edit Carousel Image' : 'Add Carousel Image'}</CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
