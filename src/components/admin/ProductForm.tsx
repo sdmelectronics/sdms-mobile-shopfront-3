@@ -81,16 +81,42 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
       if (dialogRef.current) {
         const vh = window.innerHeight * 0.01;
         dialogRef.current.style.setProperty('--vh', `${vh}px`);
+        
+        // Force a reflow to ensure the height is applied
+        dialogRef.current.style.height = `calc(${vh}px * 85)`;
+        dialogRef.current.style.maxHeight = `calc(${vh}px * 85)`;
       }
     };
 
+    // Initial setup
     handleResize();
+    
+    // Add event listeners
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
+    
+    // Handle mobile browser UI changes
+    const handleVisualViewportChange = () => {
+      if (window.visualViewport) {
+        const vh = window.visualViewport.height * 0.01;
+        if (dialogRef.current) {
+          dialogRef.current.style.setProperty('--vh', `${vh}px`);
+          dialogRef.current.style.height = `calc(${vh}px * 85)`;
+          dialogRef.current.style.maxHeight = `calc(${vh}px * 85)`;
+        }
+      }
+    };
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleVisualViewportChange);
+      }
     };
   }, []);
 
@@ -272,12 +298,11 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-   <DialogContent ref={dialogRef} className="max-w-4xl dialog-mobile-fix dialog-content !overflow-y-auto !overflow-x-hidden">
-
+      <DialogContent ref={dialogRef} className="max-w-4xl max-h-[90vh] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
         </DialogHeader>
-
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
