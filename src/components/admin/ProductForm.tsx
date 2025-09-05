@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,12 +67,32 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (product) {
       setFormData(product);
     }
   }, [product]);
+
+  // Handle mobile viewport changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (dialogRef.current) {
+        const vh = window.innerHeight * 0.01;
+        dialogRef.current.style.setProperty('--vh', `${vh}px`);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   const generateSlug = (name: string) => {
     return name
@@ -252,7 +272,7 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-   <DialogContent className="max-w-4xl !max-h-[90vh] !overflow-y-auto">
+   <DialogContent ref={dialogRef} className="max-w-4xl dialog-mobile-fix dialog-content !overflow-y-auto !overflow-x-hidden">
 
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>

@@ -150,4 +150,29 @@ All colors MUST be HSL.
       transform: translateY(0);
     }
   }
+
+  /* Mobile viewport fixes for dialogs */
+  .dialog-mobile-fix {
+    max-height: calc(var(--vh, 1vh) * 85) !important;
+    height: auto !important;
+  }
+
+  @media (min-width: 640px) {
+    .dialog-mobile-fix {
+      max-height: 90vh !important;
+    }
+  }
+
+  /* Fallback for browsers that support dvh */
+  @supports (height: 100dvh) {
+    .dialog-mobile-fix {
+      max-height: 85dvh !important;
+    }
+  }
+
+  /* Ensure proper scrolling on mobile */
+  .dialog-content {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }

@@ -177,7 +177,7 @@ export const CategoryForm = ({ category, onClose, onSave }: CategoryFormProps) =
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl dialog-mobile-fix dialog-content overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {category ? 'Edit Category' : 'Add New Category'}
