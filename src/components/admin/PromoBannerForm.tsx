@@ -200,30 +200,79 @@ export const PromoBannerForm: React.FC<PromoBannerFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
-    if (!formData.title.trim()) {
+
+    // Basic sanity: ensure onSave exists
+    if (typeof onSave !== 'function') {
+      console.error('PromoBannerForm: onSave prop is not a function', onSave);
       toast({
-        title: "Error",
-        description: "Title is required",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Save handler not available',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (!formData.image_url.trim()) {
+    // Validation
+    if (!formData.title || !formData.title.trim()) {
       toast({
-        title: "Error",
-        description: "Image is required",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Title is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.image_url || !formData.image_url.trim()) {
+      
+      toast({
+        title: 'Error',
+        description: 'Image is required',
+        variant: 'destructive',
       });
       return;
     }
 
     try {
-      await onSave(formData);
+      const result = await onSave(formData);
+      toast({
+        title: 'Saved',
+        description: banner ? 'Banner updated' : 'Banner created',
+      });
+
+      // Clear the form and preview so when the user returns the form is empty
+      setFormData({
+        title: '',
+        subtitle: '',
+        description: '',
+        image_url: '',
+        cta_text: 'Shop Now',
+        badge_text: '',
+        category_slug: '',
+        link_url: '',
+        is_active: true,
+        sort_order: 0,
+        start_date: '',
+        end_date: '',
+      });
+      setImagePreview('');
+
+      // Give the toast a moment to display, then return user to banners (parent's onCancel closes the form)
+      if (typeof onCancel === 'function') {
+        setTimeout(() => {
+          try {
+            onCancel();
+          } catch (err) {
+            console.error('Error calling onCancel after save', err);
+          }
+        }, 600);
+      }
     } catch (error) {
-      // Error handling is done in the parent component
+      console.error('onSave threw', error);
+      toast({
+        title: 'Error saving',
+        description: (error as any)?.message || 'Failed to save banner',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -542,10 +591,13 @@ export const PromoBannerForm: React.FC<PromoBannerFormProps> = ({
             <Button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2"
+              className="inline-flex items-center gap-2"
             >
               {loading ? (
-                <>Loading...</>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {banner ? 'Updating...' : 'Creating...'}
+                </>
               ) : (
                 <>
                   {banner ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -558,4 +610,4 @@ export const PromoBannerForm: React.FC<PromoBannerFormProps> = ({
       </CardContent>
     </Card>
   );
-}; 
+};
