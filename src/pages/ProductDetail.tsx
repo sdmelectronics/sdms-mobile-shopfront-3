@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy, memo, startTransition } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, ArrowLeft, Share2, Eye, Phone, Zap, ImageIcon, VideoIcon } from 'lucide-react';
+import { Star, ShoppingCart, ArrowLeft, Share2, Eye, Phone, Zap, ImageIcon, VideoIcon, Truck, ShieldCheck, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -144,7 +144,7 @@ const MediaThumbnail = memo(({
       data-thumbnail={index}
       onClick={onClick}
       className={`relative aspect-square overflow-hidden rounded border-2 transition-all duration-200 hover:opacity-80 ${
-        isSelected ? 'border-blue-600 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
+        isSelected ? 'border-warm-accent ring-2 ring-warm-accent/30' : 'border-warm-line hover:border-warm-line2'
       }`}
       aria-label={`View ${type}: ${alt}`}
     >
@@ -191,7 +191,7 @@ const StockStatus = memo(({ product }: { product: Product }) => {
         text: product.preorder_availability_date
           ? `Pre-order - Available ${new Date(product.preorder_availability_date).toLocaleDateString('en-UG', { month: 'short', day: 'numeric', year: 'numeric' })}`
           : 'Pre-order Available',
-        className: 'text-blue-600',
+        className: 'text-warm-accent',
       };
     }
 
@@ -358,15 +358,27 @@ export default function ProductDetail() {
           images, video_url, features, specifications, stock_quantity,
           rating, reviews_count, slug, sku, view_count, is_preorder,
           preorder_availability_date, condition,
-          categories!inner(name, slug)
+          categories(name, slug)
         `)
         .eq('slug', productSlug)
         .eq('is_active', true)
-        .single();
+        // LEFT join (not !inner) so uncategorized products still load, and
+        // maybeSingle() returns null for 0 rows instead of throwing a 406.
+        .maybeSingle();
 
       if (error) throw error;
 
-      if (data) {
+      if (!data) {
+        toast({
+          title: 'Product not found',
+          description: 'This product is no longer available.',
+          variant: 'destructive',
+        });
+        navigate('/products');
+        return;
+      }
+
+      {
         // Get or generate rating for this product
         let rating = getProductRating(data.id);
         if (!rating) {
@@ -383,7 +395,7 @@ export default function ProductDetail() {
           view_count: data.view_count || 0,
           images: data.images || [],
           is_preorder: data.is_preorder || false,
-          categories: data.categories[0] || { name: '', slug: '' },
+          categories: (Array.isArray(data.categories) ? data.categories[0] : data.categories) || { name: '', slug: '' },
         };
 
         setProduct(productData);
@@ -499,7 +511,7 @@ export default function ProductDetail() {
   const isOutOfStock = product.stock_quantity === 0 && !product.is_preorder;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-8 pb-40 md:pb-8">
       <nav className="mb-6" aria-label="Breadcrumb">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-2">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -517,7 +529,7 @@ export default function ProductDetail() {
           <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 relative" aria-describedby={`product-desc-${product.id}`}>
             {imageLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-warm-accent"></div>
               </div>
             )}
             {currentMedia.type === 'video' ? (
@@ -552,12 +564,12 @@ export default function ProductDetail() {
             </div>
             {discountPercentage > 0 && (
               <div className="absolute top-4 left-4">
-                <Badge className="bg-red-500 text-white">{discountPercentage}% OFF</Badge>
+                <Badge className="bg-warm-accent text-white">-{discountPercentage}%</Badge>
               </div>
             )}
             {product.is_preorder && (
               <div className="absolute bottom-4 left-4">
-                <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+                <Badge className="bg-warm-accent text-white">
                   <Zap className="w-3 h-3 mr-1" />
                   PRE-ORDER
                 </Badge>
@@ -587,13 +599,7 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2">
                 {product.categories && <Badge variant="outline">{product.categories.name}</Badge>}
                 {product.condition && (
-                  <Badge className={`text-white text-xs px-2 py-1 ${
-                    product.condition === 'new' ? 'bg-blue-500' :
-                    product.condition === 'used' ? 'bg-gray-500' :
-                    product.condition === 'like_new' ? 'bg-green-500' :
-                    product.condition === 'refurbished' ? 'bg-purple-500' :
-                    product.condition === 'open_box' ? 'bg-orange-500' : 'bg-gray-500'
-                  }`}>
+                  <Badge className="bg-warm-accentSoft text-warm-accent text-xs px-2 py-1 font-semibold">
                     {product.condition === 'like_new' ? 'LIKE NEW' :
                      product.condition === 'open_box' ? 'OPEN BOX' :
                      product.condition.toUpperCase()}
@@ -605,7 +611,7 @@ export default function ProductDetail() {
                 {formatViewCount(product.view_count || 0)} views
               </div>
             </div>
-            <h1 id={`product-desc-${product.id}`} className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 id={`product-desc-${product.id}`} className="font-display text-2xl md:text-3xl font-bold text-warm-ink leading-tight mb-2">
               {product.name}
             </h1>
             {product.sku && <p className="text-sm text-gray-500">SKU: {product.sku}</p>}
@@ -614,12 +620,12 @@ export default function ProductDetail() {
           <RatingDisplay rating={product.rating || 4.0} reviewsCount={product.reviews_count || 0} />
           
           <div className="space-y-2">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-3xl font-bold text-blue-600">{formatPrice(product.price)}</span>
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="font-display text-3xl font-extrabold text-warm-ink tabular-nums">{formatPrice(product.price)}</span>
               {product.original_price && discountPercentage > 0 && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">{formatPrice(product.original_price)}</span>
-                  <Badge className="bg-red-500 text-white">{discountPercentage}% OFF</Badge>
+                  <span className="text-lg text-warm-faint line-through">{formatPrice(product.original_price)}</span>
+                  <span className="text-xs font-bold text-warm-accent bg-warm-accentSoft px-2.5 py-1 rounded-full">Save {discountPercentage}%</span>
                 </>
               )}
             </div>
@@ -643,34 +649,51 @@ export default function ProductDetail() {
             </div>
           )}
           
-          <div className="flex gap-4">
+          {/* Trust row — old-design (free delivery / genuine warranty / WhatsApp) */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="flex flex-col items-center text-center gap-1.5 rounded-xl border border-warm-line bg-warm-bg px-2 py-3">
+              <Truck className="w-[18px] h-[18px] text-warm-accent" />
+              <span className="text-[11px] font-semibold text-warm-ink leading-tight">
+                Free delivery<br /><span className="font-normal text-warm-faint">within Kampala</span>
+              </span>
+            </div>
+            <div className="flex flex-col items-center text-center gap-1.5 rounded-xl border border-warm-line bg-warm-bg px-2 py-3">
+              <ShieldCheck className="w-[18px] h-[18px] text-warm-accent" />
+              <span className="text-[11px] font-semibold text-warm-ink leading-tight">
+                Genuine<br /><span className="font-normal text-warm-faint">warranty</span>
+              </span>
+            </div>
+            <a
+              href="https://wa.me/256755869853"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center text-center gap-1.5 rounded-xl border border-warm-line bg-warm-bg px-2 py-3 hover:border-warm-accent/40 transition-colors"
+            >
+              <MessageCircle className="w-[18px] h-[18px] text-[#25D366]" />
+              <span className="text-[11px] font-semibold text-warm-ink leading-tight">
+                Order via<br /><span className="font-normal text-warm-faint">WhatsApp</span>
+              </span>
+            </a>
+          </div>
+
+          {/* CTA — sticky bottom bar on mobile (above the tab bar), inline on desktop */}
+          <div className="fixed bottom-[66px] left-0 right-0 z-30 flex gap-3 items-center bg-warm-surface border-t border-warm-line px-4 py-3 shadow-[0_-2px_20px_rgba(80,55,35,0.10)] md:static md:bottom-auto md:z-auto md:px-0 md:py-0 md:border-0 md:bg-transparent md:shadow-none">
+            <a href="tel:+256755869853" aria-label="Call to order" className="flex-shrink-0">
+              <Button size="lg" className="bg-warm-ok hover:opacity-90 text-white px-4">
+                <Phone className="w-5 h-5" />
+              </Button>
+            </a>
             <Button
               onClick={handleAddToCart}
-              className={`flex-1 ${product.is_preorder ? 'bg-blue-500 hover:bg-blue-600' : 'bg-orange-500 hover:bg-orange-600'} text-white`}
+              className="flex-1 bg-warm-accent hover:bg-warm-accentPress text-white"
               size="lg"
               disabled={isOutOfStock}
               aria-label={isOutOfStock ? 'Out of Stock' : product.is_preorder ? `Pre-order ${product.name}` : `Add ${product.name} to cart`}
             >
-              {isOutOfStock ? (
-                'Out of Stock'
-              ) : product.is_preorder ? (
-                <>
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Pre-order Now
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart
-                </>
-              )}
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              {isOutOfStock ? 'Out of Stock' : product.is_preorder ? 'Pre-order Now' : 'Add to Cart'}
             </Button>
-            <a href="tel:+256755869853">
-              <Button variant="outline" size="lg" aria-label="Contact seller">
-                <Phone className="w-5 h-5" />
-              </Button>
-            </a>
-            <Button variant="outline" size="lg" onClick={handleShare} aria-label="Share product">
+            <Button variant="outline" size="lg" onClick={handleShare} aria-label="Share product" className="flex-shrink-0">
               <Share2 className="w-5 h-5" />
             </Button>
           </div>

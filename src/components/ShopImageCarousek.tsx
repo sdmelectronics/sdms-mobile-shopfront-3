@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase, ensureConnection } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 const ShopImageCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -15,14 +15,6 @@ const ShopImageCarousel = () => {
     async function fetchCarouselImages() {
       setLoading(true);
       try {
-        // Ensure Supabase connection is ready
-        const isConnected = await ensureConnection();
-        if (!isConnected) {
-          console.warn('Unable to connect to database, using fallback images');
-          if (isMounted) setLoading(false);
-          return;
-        }
-
         const { data, error } = await supabase
           .from('carousel_images')
           .select('id, image_url, alt_text')
@@ -191,10 +183,10 @@ const ShopImageCarousel = () => {
             role="button"
             tabIndex={0}
             aria-label={`Go to slide ${index + 1}`}
-            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-warm-accent ${
               currentIndex === index
-                ? 'bg-blue-600 scale-110'
-                : 'bg-gray-300 hover:bg-gray-400'
+                ? 'bg-warm-accent scale-110'
+                : 'bg-warm-line2 hover:bg-warm-faint'
             }`}
           />
         ))}

@@ -3,13 +3,14 @@ import { Users, Award, Truck, Shield } from 'lucide-react';
 
 const AboutUsPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-warm-bg">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+      <div className="bg-warm-hero text-warm-ink">
         <div className="container mx-auto px-4 lg:px-8 py-16">
           <div className="text-center">
-            <h1 className="text-4xl lg:text-6xl font-bold mb-4">About SDM Electronics</h1>
-            <p className="text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto">
+            <span className="text-warm-accent font-bold uppercase tracking-[0.14em] text-xs">Since 2014 · Kampala</span>
+            <h1 className="text-4xl lg:text-6xl font-bold mb-4 mt-3">About SDM Electronics</h1>
+            <p className="text-xl lg:text-2xl text-warm-muted max-w-3xl mx-auto">
               Uganda's premier destination for quality electronics and exceptional customer service
             </p>
           </div>
@@ -70,19 +71,19 @@ const AboutUsPage = () => {
         </div>
 
         {/* Stats Section */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-8 lg:p-12 text-white mb-16">
+        <div className="bg-warm-panel rounded-2xl p-8 lg:p-12 text-white mb-16">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-4xl lg:text-5xl font-bold mb-2">5000+</div>
-              <div className="text-lg text-white/90">Happy Customers</div>
+              <div className="text-4xl lg:text-5xl font-bold mb-2 text-warm-accent">5000+</div>
+              <div className="text-lg text-white/80">Happy Customers</div>
             </div>
             <div>
-              <div className="text-4xl lg:text-5xl font-bold mb-2">10,000+</div>
-              <div className="text-lg text-white/90">Products Delivered</div>
+              <div className="text-4xl lg:text-5xl font-bold mb-2 text-warm-accent">10,000+</div>
+              <div className="text-lg text-white/80">Products Delivered</div>
             </div>
             <div>
-              <div className="text-4xl lg:text-5xl font-bold mb-2">5+</div>
-              <div className="text-lg text-white/90">Years of Excellence</div>
+              <div className="text-4xl lg:text-5xl font-bold mb-2 text-warm-accent">5+</div>
+              <div className="text-lg text-white/80">Years of Excellence</div>
             </div>
           </div>
         </div>

@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Filter, Grid, List, Star, ShoppingCart, Eye, Heart, Phone, Zap } from "lucide-react";
+import { Filter, Grid, List, Star, ShoppingCart, Eye, Heart, Phone, Zap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useProductDetail } from "@/hooks/useProductDetail";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateProductRatings } from "@/lib/ratingUtils";
@@ -50,16 +52,21 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Loading skeleton component - optimized
 const ProductSkeleton = ({ viewMode }: { viewMode: 'grid' | 'list' }) => (
-  <div className={`bg-white rounded-xl shadow-sm animate-pulse ${
-    viewMode === 'list' ? 'flex gap-4 p-4' : 'overflow-hidden'
+  <div className={`bg-warm-surface border border-warm-line rounded-2xl shadow-sm animate-pulse ${
+    viewMode === 'list' ? 'flex gap-4 p-3' : 'flex flex-col overflow-hidden'
   }`}>
-    <div className={`bg-gray-200 ${
-      viewMode === 'list' ? 'w-24 h-24 rounded-lg flex-shrink-0' : 'h-40 md:h-48 rounded-t-xl'
+    <div className={`bg-warm-line ${
+      viewMode === 'list' ? 'w-24 h-24 rounded-xl flex-shrink-0' : 'aspect-square'
     }`}></div>
-    <div className={viewMode === 'list' ? 'flex-1' : 'p-3'}>
-      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-      <div className="h-8 bg-gray-200 rounded"></div>
+    <div className={`flex flex-col flex-1 min-w-0 gap-2 ${viewMode === 'list' ? '' : 'px-4 pt-3.5 pb-4'}`}>
+      <div className="h-2.5 bg-warm-line rounded w-16"></div>
+      <div className="h-4 bg-warm-line rounded w-3/4"></div>
+      <div className="h-4 bg-warm-line rounded w-1/2"></div>
+      <div className="h-3 bg-warm-line rounded w-12 mt-0.5"></div>
+      <div className="flex items-end justify-between pt-2">
+        <div className="h-5 bg-warm-line rounded w-24"></div>
+        <div className="h-10 w-10 bg-warm-line rounded-lg"></div>
+      </div>
     </div>
   </div>
 );
@@ -74,6 +81,12 @@ const ProductCard = ({ product, viewMode, onAddToCart }: {
   const [imageError, setImageError] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const { items: cartItems } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { openDetail } = useProductDetail();
+  const inCart = cartItems.some((i) => i.id === product.id);
+  const wished = isInWishlist(product.id);
 
   const formatPrice = useCallback((price: number) => {
     return new Intl.NumberFormat('en-UG', {
@@ -111,7 +124,7 @@ const ProductCard = ({ product, viewMode, onAddToCart }: {
         text: product.preorder_availability_date
           ? `Available ${formatAvailabilityDate(product.preorder_availability_date)}`
           : 'Pre-order Available',
-        className: 'text-blue-600'
+        className: 'text-warm-accent'
       };
     }
     
@@ -154,23 +167,25 @@ const ProductCard = ({ product, viewMode, onAddToCart }: {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 group ${
-        viewMode === 'list' ? 'flex gap-4 p-4' : 'overflow-hidden'
+      className={`group bg-warm-surface border border-warm-line rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-[3px] transition-all duration-200 ${
+        viewMode === 'list' ? 'flex gap-4 p-3' : 'flex flex-col overflow-hidden'
       }`}
     >
       {/* Product Image */}
-      <div 
+      <div
         ref={containerRef}
-        className={`relative ${
-          viewMode === 'list' ? 'w-24 h-24 rounded-lg flex-shrink-0' : 'aspect-square'
+        className={`relative overflow-hidden ${
+          viewMode === 'list' ? 'w-24 h-24 rounded-xl flex-shrink-0' : 'aspect-square bg-[#F1ECE5]'
         }`}
       >
-        <Link to={`/products/${product.slug}`} className="block w-full h-full">
-          <div className="w-full h-full bg-gray-100 rounded overflow-hidden">
+        <Link
+          to={`/products/${product.slug}`}
+          onClick={(e) => { e.preventDefault(); openDetail(product); }}
+          className="block w-full h-full"
+        >
+          <div className="w-full h-full overflow-hidden">
             {!imageSrc && (
-              <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
-                <div className="text-gray-400 text-xs">Loading...</div>
-              </div>
+              <div className="w-full h-full bg-warm-line animate-pulse" />
             )}
             {imageSrc && (
               <img
@@ -186,17 +201,17 @@ const ProductCard = ({ product, viewMode, onAddToCart }: {
               />
             )}
             {imageError && imageSrc && (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+              <div className="w-full h-full bg-warm-line flex items-center justify-center text-warm-faint text-xs">
                 No Image
               </div>
             )}
           </div>
         </Link>
-        
-        {/* Badges and Icons */}
-        <div className="absolute top-2 left-2">
+
+        {/* Tags (top-left): pre-order / discount */}
+        <div className="absolute top-3 left-3">
           {product.is_preorder ? (
-            <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-2 py-1">
+            <Badge className="bg-warm-accent text-white text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full">
               <span className="flex items-center gap-1">
                 <Zap className="w-3 h-3" />
                 PRE-ORDER
@@ -204,125 +219,108 @@ const ProductCard = ({ product, viewMode, onAddToCart }: {
             </Badge>
           ) : (
             discountPercentage > 0 && (
-              <Badge className="bg-red-500 text-white text-xs px-2 py-1">
+              <Badge className="bg-warm-accent text-white text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full">
                 -{discountPercentage}%
               </Badge>
             )
           )}
         </div>
 
-        {/* View Count */}
-        <div className="absolute bottom-2 left-2">
-          <div className="bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            {formatViewCount(product.view_count || 0)}
-          </div>
-        </div>
-
-        {/* Condition Badge */}
+        {/* Condition pill (top-right) */}
         {product.condition && (
-          <div className="absolute top-2 right-2 flex flex-col gap-1">
-            <Badge className={`text-white text-[10px] px-2 py-0.5 ${
-              product.condition === 'new' ? 'bg-blue-500' :
-              product.condition === 'used' ? 'bg-gray-500' :
-              product.condition === 'like_new' ? 'bg-green-500' :
-              product.condition === 'refurbished' ? 'bg-purple-500' :
-              product.condition === 'open_box' ? 'bg-orange-500' : 'bg-gray-500'
-            }`}>
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-white/95 text-warm-ink text-[10.5px] px-2.5 py-1 rounded-full shadow-sm font-bold tracking-wide">
               {product.condition === 'like_new' ? 'LIKE NEW' :
                product.condition === 'open_box' ? 'OPEN BOX' :
                product.condition.toUpperCase()}
             </Badge>
           </div>
         )}
+
+        {/* Wishlist toggle (grid) — stays visible (filled) once saved, otherwise fades in on hover */}
+        {viewMode === 'grid' && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleWishlist({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                images: product.images,
+                slug: product.slug,
+              });
+            }}
+            aria-label={wished ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+            aria-pressed={wished}
+            className={`absolute bottom-3 right-3 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center transition-all duration-200 ${
+              wished
+                ? 'opacity-100 translate-y-0 text-warm-accent'
+                : 'opacity-0 translate-y-1.5 text-warm-ink group-hover:opacity-100 group-hover:translate-y-0 hover:text-warm-accent'
+            }`}
+          >
+            <Heart className={`w-[17px] h-[17px] ${wished ? 'fill-current' : ''}`} />
+          </button>
+        )}
       </div>
 
       {/* Product Info */}
-      <div className={`p-3 flex-1 ${viewMode === 'list' ? 'p-0' : ''}`}>
-        <Link to={`/products/${product.slug}`}>
-          <h3 className="font-medium text-gray-900 hover:text-blue-600 transition-colors mb-1 text-sm line-clamp-2">
+      <div className={`flex flex-col flex-1 min-w-0 gap-1 md:gap-1.5 ${viewMode === 'list' ? '' : 'px-3 md:px-4 pt-3 md:pt-3.5 pb-3.5 md:pb-4'}`}>
+        {product.category && (
+          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] text-warm-faint truncate">
+            {product.category}
+          </span>
+        )}
+
+        <Link
+          to={`/products/${product.slug}`}
+          onClick={(e) => { e.preventDefault(); openDetail(product); }}
+        >
+          <h3 className="text-[13px] md:text-[15px] font-semibold text-warm-ink leading-snug line-clamp-2 hover:text-warm-accent transition-colors">
             {product.name}
           </h3>
         </Link>
-        
-        {/* Rating */}
-        <div className="flex items-center gap-1 mb-2">
-          <div className="flex" role="img" aria-label={`Rating: ${product.rating || 4} out of 5 stars`}>
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`w-3 h-3 ${
-                  i < Math.floor(product.rating || 4) 
-                    ? 'text-yellow-400 fill-current' 
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-gray-500">
-            ({product.reviews_count || 0})
-          </span>
-        </div>
 
-        {/* Price */}
-        <div className="mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm md:text-base font-bold text-blue-600">
-              {formatPrice(product.price)}
-            </span>
+        {product.rating ? (
+          <span className="flex items-center gap-1.5 text-xs text-warm-muted">
+            <Star className="w-[13px] h-[13px] text-warm-star fill-current" aria-hidden="true" />
+            {product.rating.toFixed(1)}
+            {product.reviews_count ? <span className="text-warm-faint">({product.reviews_count})</span> : null}
+          </span>
+        ) : null}
+
+        {/* Footer: price + icon add button */}
+        <div className="flex items-end justify-between gap-2 mt-auto pt-1.5 min-w-0">
+          <span className="min-w-0 font-display font-extrabold text-[15px] md:text-[18px] leading-tight text-warm-ink tabular-nums break-words">
+            {formatPrice(product.price)}
             {product.original_price && discountPercentage > 0 && (
-              <span className="text-xs text-gray-400 line-through">
+              <small className="block font-sans font-medium text-[11px] md:text-xs text-warm-faint line-through">
                 {formatPrice(product.original_price)}
-              </span>
+              </small>
             )}
-          </div>
-        </div>
-
-        {/* Stock Status / Pre-order Info */}
-        <div className="mb-3">
-          <span className={`text-xs font-medium ${stockStatus.className}`}>
-            {stockStatus.text}
           </span>
-        </div>
 
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button
-            onClick={() => onAddToCart(product)}
-            className={`flex-1 text-xs py-2 ${
-              isOutOfStock
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : product.is_preorder
-                ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                : 'bg-orange-500 hover:bg-orange-600 text-white'
-            }`}
-            size="sm"
+          <button
+            onClick={() => { if (isOutOfStock) return; onAddToCart(product); }}
             disabled={isOutOfStock}
-            aria-label={isOutOfStock ? 'Out of stock' : product.is_preorder ? 'Pre-order item' : 'Add to cart'}
+            aria-label={
+              isOutOfStock
+                ? 'Out of stock'
+                : inCart
+                ? `${product.name} is in your cart — add another`
+                : product.is_preorder ? 'Pre-order item' : 'Add to cart'
+            }
+            title={inCart ? 'In your cart' : undefined}
+            className={`w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+              isOutOfStock
+                ? 'bg-warm-line text-warm-faint cursor-not-allowed'
+                : inCart
+                ? 'bg-warm-accent text-white hover:bg-warm-accentPress'
+                : 'bg-warm-accentSoft text-warm-accent hover:bg-warm-accent hover:text-white'
+            }`}
           >
-            {isOutOfStock ? (
-              'Out of Stock'
-            ) : product.is_preorder ? (
-              <>
-                <ShoppingCart className="w-3 h-3 mr-1" />
-                Pre-order
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-3 h-3 mr-1" />
-                Add to Cart
-              </>
-            )}
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="px-2"
-            aria-label="Contact seller"
-          >
-            <Phone className="w-3 h-3" />
-          </Button>
+            {inCart ? <Check className="w-4 h-4 md:w-[18px] md:h-[18px]" /> : <ShoppingCart className="w-4 h-4 md:w-[18px] md:h-[18px]" />}
+          </button>
         </div>
       </div>
     </div>
@@ -465,7 +463,7 @@ const Products = () => {
             is_preorder,
             preorder_availability_date,
             condition,
-            categories!inner(id, name, slug)
+            categories(id, name, slug)
           `, { count: 'exact' })
           .eq('is_active', true);
 
@@ -572,16 +570,19 @@ const Products = () => {
           condition: product.condition,
         })) || [];
 
-        // Generate random ratings for products
+        // Synthesize ratings ONLY as a fallback. Real rating/reviews_count
+        // values from the database must be preserved, not overwritten.
         const ratingsMap = generateProductRatings(transformedProducts);
-        
-        // Apply ratings to products
+
         const productsWithRatings = transformedProducts.map(product => {
-          const rating = ratingsMap.get(product.id);
+          const generated = ratingsMap.get(product.id);
+          const hasRealRating = typeof product.rating === 'number' && product.rating > 0;
           return {
             ...product,
-            rating: rating?.rating || 4.0,
-            reviews_count: rating?.reviews_count || 50,
+            rating: hasRealRating ? product.rating : generated?.rating ?? 4.0,
+            reviews_count: hasRealRating
+              ? product.reviews_count ?? generated?.reviews_count ?? 0
+              : generated?.reviews_count ?? 50,
           };
         });
 
@@ -761,7 +762,7 @@ const Products = () => {
 
   if (loading && products.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-warm-bg">
         <div className="container mx-auto px-4 py-6">
           <div className={
             viewMode === 'grid' 
@@ -778,7 +779,7 @@ const Products = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-warm-bg">
       {/* Header Section */}
       <div className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4">
@@ -787,7 +788,7 @@ const Products = () => {
           </h1>
           <p className="text-sm text-gray-600">
             {totalProducts} product{totalProducts !== 1 ? 's' : ''} found
-            {loading && products.length > 0 && <span className="ml-2 text-blue-600">Updating...</span>}
+            {loading && products.length > 0 && <span className="ml-2 text-warm-accent">Updating...</span>}
           </p>
         </div>
       </div>
@@ -901,8 +902,8 @@ const Products = () => {
             {/* Loading indicator for pagination */}
             {loading && products.length > 0 && (
               <div className="mt-8 text-center">
-                <div className="inline-flex items-center gap-2 text-blue-600">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="inline-flex items-center gap-2 text-warm-accent">
+                  <div className="w-4 h-4 border-2 border-warm-accent border-t-transparent rounded-full animate-spin"></div>
                   Loading more products...
                 </div>
               </div>

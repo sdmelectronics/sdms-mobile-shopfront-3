@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Link } from "react-router-dom";
-import { Star, ShoppingCart, Eye, Zap, Phone } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Star, ShoppingCart, Heart, Check } from "lucide-react";
 import { motion } from "framer-motion";
-import { memo } from "react";
+import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useProductDetail } from "@/hooks/useProductDetail";
 
 interface Product {
   view_count: number;
@@ -31,6 +32,13 @@ const cardVariants = {
     y: 0,
     transition: { delay: i * 0.1 },
   }),
+};
+
+const conditionLabel = (condition?: string) => {
+  if (!condition) return null;
+  if (condition === 'like_new') return 'LIKE NEW';
+  if (condition === 'open_box') return 'OPEN BOX';
+  return condition.toUpperCase();
 };
 
 export const ProductCard = memo(
@@ -63,6 +71,23 @@ export const ProductCard = memo(
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const productUrl = `/products/${product.slug}`;
 
+    const { items: cartItems } = useCart();
+    const { isInWishlist, toggleWishlist } = useWishlist();
+    const { openDetail } = useProductDetail();
+    const inCart = cartItems.some((i) => i.id === product.id);
+    const wished = isInWishlist(product.id);
+
+    const hasDiscount =
+      !!product.original_price &&
+      product.original_price > product.price &&
+      !product.is_preorder;
+    const discountPct = hasDiscount
+      ? Math.floor(getDiscountPercentage(product.original_price!, product.price))
+      : 0;
+    const cond = conditionLabel(product.condition);
+    const isOutOfStock = product.stock_quantity === 0 && !product.is_preorder;
+    const categoryName = product.categories?.name;
+
     return (
       <motion.div
         custom={index}
@@ -72,187 +97,157 @@ export const ProductCard = memo(
         className="group relative"
         role="region"
         aria-label={`Product: ${product.name}`}
-        aria-describedby={`product-desc-${product.id}`}
       >
-        <div className="bg-white/90 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-shadow duration-300 border border-gray-100">
-          <div className="relative overflow-hidden">
+        <div className="flex flex-col h-full bg-warm-surface border border-warm-line rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-[3px] transition-all duration-200">
+          {/* Media */}
+          <Link
+            to={productUrl}
+            onClick={(e) => {
+              e.preventDefault();
+              incrementViewCount(product.id);
+              openDetail(product);
+            }}
+            aria-label={`View ${product.name}`}
+            className="relative block aspect-square bg-[#F1ECE5] overflow-hidden"
+          >
+            {!isImageLoaded && (
+              <div className="absolute inset-0 bg-warm-line animate-pulse" />
+            )}
+            <img
+              src={product.images?.[0] || "/placeholder.svg"}
+              alt={product.name || "Product image"}
+              loading="lazy"
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+              onLoad={() => setIsImageLoaded(true)}
+              className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                isImageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+
+            {/* Tags (top-left): pre-order / discount */}
+            {product.is_preorder && (
+              <span className="absolute top-3 left-3 text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full bg-warm-accent text-white">
+                PRE-ORDER
+              </span>
+            )}
+            {hasDiscount && (
+              <span className="absolute top-3 left-3 text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full bg-warm-accent text-white">
+                -{discountPct}%
+              </span>
+            )}
+
+            {/* Condition pill (top-right) */}
+            {cond && (
+              <span className="absolute top-3 right-3 text-[10.5px] font-bold tracking-wide px-2.5 py-1 rounded-full bg-white/95 text-warm-ink shadow-sm">
+                {cond}
+              </span>
+            )}
+
+            {/* Wishlist toggle — stays visible (filled) once saved, otherwise fades in on hover */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleWishlist({
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                  images: product.images,
+                  slug: product.slug,
+                });
+              }}
+              aria-label={
+                wished
+                  ? `Remove ${product.name} from wishlist`
+                  : `Add ${product.name} to wishlist`
+              }
+              aria-pressed={wished}
+              className={`absolute bottom-3 right-3 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center transition-all duration-200 ${
+                wished
+                  ? "opacity-100 translate-y-0 text-warm-accent"
+                  : "opacity-0 translate-y-1.5 text-warm-ink group-hover:opacity-100 group-hover:translate-y-0 hover:text-warm-accent"
+              }`}
+            >
+              <Heart className={`w-[17px] h-[17px] ${wished ? "fill-current" : ""}`} />
+            </button>
+          </Link>
+
+          {/* Body */}
+          <div className="flex flex-col flex-1 gap-1 md:gap-1.5 px-3 md:px-4 pt-3 md:pt-3.5 pb-3.5 md:pb-4">
+            {categoryName && (
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] text-warm-faint truncate">
+                {categoryName}
+              </span>
+            )}
+
             <Link
               to={productUrl}
-              onClick={() => incrementViewCount(product.id)}
-              aria-label={`View ${product.name}`}
-              className="block"
+              onClick={(e) => {
+                e.preventDefault();
+                openDetail(product);
+              }}
             >
-              {/* Skeleton Placeholder */}
-              {!isImageLoaded && (
-                <div className="w-full h-40 sm:h-48 md:h-56 bg-gray-200 animate-pulse" />
-              )}
-
-              <img
-                src={product.images?.[0] || "/placeholder.svg"}
-                alt={product.name || "Product image"}
-                loading="lazy"
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                onLoad={() => setIsImageLoaded(true)}
-                className={`w-full h-40 sm:h-48 md:h-56 object-cover transition-transform duration-300 ${
-                  isImageLoaded ? "group-hover:scale-105 opacity-100" : "opacity-0"
-                }`}
-              />
-            </Link>
-
-            {/* Badges */}
-            {product.is_preorder && (
-              <Badge className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] px-2 py-0.5">
-                <Zap className="w-3 h-3 mr-1" />
-                PRE-ORDER
-              </Badge>
-            )}
-            {product.original_price &&
-              product.original_price > product.price &&
-              !product.is_preorder && (
-                <Badge className="absolute top-2 left-2 bg-red-500 text-white text-[10px] px-2 py-0.5">
-                  <Zap className="w-3 h-3 mr-1" />
-                  {Math.floor(getDiscountPercentage(product.original_price, product.price))}% OFF
-                </Badge>
-              )}
-            
-            {/* Condition Badge */}
-            {product.condition && (
-              <Badge className={`absolute top-2 right-2 text-white text-[10px] px-2 py-0.5 ${
-                product.condition === 'new' ? 'bg-blue-500' :
-                product.condition === 'used' ? 'bg-gray-500' :
-                product.condition === 'like_new' ? 'bg-green-500' :
-                product.condition === 'refurbished' ? 'bg-purple-500' :
-                product.condition === 'open_box' ? 'bg-orange-500' : 'bg-gray-500'
-              }`}>
-                {product.condition === 'like_new' ? 'LIKE NEW' :
-                 product.condition === 'open_box' ? 'OPEN BOX' :
-                 product.condition.toUpperCase()}
-              </Badge>
-            )}
-          
-
-            {/* View Count */}
-            <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              {formatViewCount(product.view_count)}
-            </div>
-          </div>
-
-          <div className="p-2 sm:p-3">
-            <Link to={productUrl}>
               <h3
                 id={`product-desc-${product.id}`}
-                className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1 sm:line-clamp-2"
+                className="text-[13px] md:text-[15px] font-semibold text-warm-ink leading-snug line-clamp-2"
               >
                 {product.name}
               </h3>
             </Link>
 
-            <div className="flex items-center gap-1 mb-1">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-3 h-3 ${
-                      product.rating && i < Math.floor(product.rating)
-                        ? "text-yellow-400 fill-current"
-                        : "text-gray-300"
-                    }`}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-              {product.rating && (
-                <span className="text-xs text-gray-600 ml-1">
-                  {product.rating.toFixed(1)}
-                </span>
-              )}
-              {product.reviews_count && product.reviews_count > 0 && (
-                <span className="text-xs text-gray-500">
-                  ({product.reviews_count.toLocaleString()})
-                </span>
-              )}
-            </div>
-            <div className="mb-1">
-  <div className="flex flex-wrap items-center gap-x-2 text-sm font-bold text-gray-900">
-    <span className="truncate">{formatPrice(product.price)}</span>
-    {product.original_price && (
-      <span className="text-xs text-gray-500 line-through truncate">
-        {formatPrice(product.original_price)}
-      </span>
-    )}
-  </div>
-</div>
-
-            <div className="mb-2">
-              <div className="flex items-center justify-between text-xs">
-                <span
-                  className={`${
-                    product.is_preorder
-                      ? "text-blue-600"
-                      : product.stock_quantity > 10
-                      ? "text-green-600"
-                      : product.stock_quantity > 5
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {product.is_preorder
-                    ? product.preorder_availability_date
-                      ? `Available ${formatAvailabilityDate(product.preorder_availability_date)}`
-                      : "Pre-order Available"
-                    : product.stock_quantity > 10
-                    ? "In Stock"
-                    : product.stock_quantity > 0
-                    ? `Only ${product.stock_quantity} left!`
-                    : "Out of Stock"}
-                </span>
-                <a
-                  href="tel:+256755869853"
-                  className="p-1 rounded-full hover:bg-gray-200"
-                  aria-label="Call us"
-                >
-                  <Phone className="w-4 h-4 text-orange-500" />
-                </a>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                addToCart({
-                  id: product.id,
-                  name: product.name,
-                  price: product.price,
-                  images: product.images,
-                });
-                toast({
-                  title: product.is_preorder ? "Pre-ordered" : "Added to Cart",
-                  description: product.is_preorder
-                    ? `${product.name} has been added to your pre-orders`
-                    : `${product.name} has been added to your cart`,
-                });
-              }}
-              disabled={product.stock_quantity === 0 && !product.is_preorder}
-              className={`w-full py-2 rounded-md text-xs ${
-                product.stock_quantity === 0 && !product.is_preorder
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : product.is_preorder
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-orange-600 text-white hover:bg-orange-700"
-              }`}
-              aria-label={`${
-                product.is_preorder ? "Pre-order" : "Add to Cart"
-              } ${product.name}`}
-            >
-              <span className="flex items-center justify-center gap-1">
-                <ShoppingCart className="w-3 h-3" />
-                {product.stock_quantity === 0 && !product.is_preorder
-                  ? "Out of Stock"
-                  : product.is_preorder
-                  ? "Pre-order"
-                  : "Add to Cart"}
+            {product.rating ? (
+              <span className="flex items-center gap-1.5 text-xs text-warm-muted">
+                <Star className="w-[13px] h-[13px] text-warm-star fill-current" aria-hidden="true" />
+                {product.rating.toFixed(1)}
               </span>
-            </button>
+            ) : null}
+
+            {/* Footer: price + icon add button */}
+            <div className="flex items-end justify-between gap-2 mt-auto pt-1.5 min-w-0">
+              <span className="min-w-0 font-display font-extrabold text-[15px] md:text-[18px] leading-tight text-warm-ink tabular-nums break-words">
+                {formatPrice(product.price)}
+                {hasDiscount && (
+                  <small className="block font-sans font-medium text-[11px] md:text-xs text-warm-faint line-through">
+                    {formatPrice(product.original_price!)}
+                  </small>
+                )}
+              </span>
+
+              <button
+                onClick={() => {
+                  if (isOutOfStock) return;
+                  // The cart context shows its own "Added to Cart" / "Cart Updated" toast.
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    images: product.images,
+                  });
+                }}
+                disabled={isOutOfStock}
+                aria-label={
+                  isOutOfStock
+                    ? `${product.name} is out of stock`
+                    : inCart
+                    ? `${product.name} is in your cart — add another`
+                    : `${product.is_preorder ? "Pre-order" : "Add to cart"}: ${product.name}`
+                }
+                title={inCart ? "In your cart" : undefined}
+                className={`w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                  isOutOfStock
+                    ? "bg-warm-line text-warm-faint cursor-not-allowed"
+                    : inCart
+                    ? "bg-warm-accent text-white hover:bg-warm-accentPress"
+                    : "bg-warm-accentSoft text-warm-accent hover:bg-warm-accent hover:text-white"
+                }`}
+              >
+                {inCart ? (
+                  <Check className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                ) : (
+                  <ShoppingCart className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>

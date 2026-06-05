@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(///wsl.localhost/Ubuntu/home/kiram_dev/sdms-mobile-shopfront-3/src/pages/**)",
+      "Read(///wsl.localhost/Ubuntu/home/kiram_dev/sdms-mobile-shopfront-3/src/components/**)",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc \"cd /home/kiram_dev/sdms-mobile-shopfront-3 && node -v 2>&1 | head -1 && npx vite build 2>&1 | tail -30\")",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc \"cd /home/kiram_dev/sdms-mobile-shopfront-3 && npx tsc -p tsconfig.app.json --noEmit 2>&1 | head -30 && echo '---EXIT---' && echo done\")",
+      "Bash(rm -rf /tmp/dx2)",
+      "Bash(mkdir -p /tmp/dx2)",
+      "Bash(tar xzf *)",
+      "Bash(grep -n 'HomeView\\\\|function Categories\\\\|function ValueBand\\\\|Shop by category\\\\|Everything from\\\\|Free Kampala delivery\\\\|Genuine & warrantied\\\\|Talk to a human\\\\|Featured products\\\\|Hand-picked\\\\|Recently added\\\\|Fresh arrivals' __TRACKED_VAR__/WarmStore.jsx)",
+      "Bash(sed -n 470,489p /tmp/dx2/sdm-electronics-design-system/project/ui_kits/storefront/WarmStore.jsx)",
+      "Bash(sed -n 110,128p /tmp/dx2/sdm-electronics-design-system/project/ui_kits/storefront/WarmStore.jsx)",
+      "Bash(sed -n 171,190p /tmp/dx2/sdm-electronics-design-system/project/ui_kits/storefront/WarmStore.jsx)",
+      "Bash(grep -i \"noUnused\\\\|strict\" \"//wsl.localhost/Ubuntu/home/kiram_dev/sdms-mobile-shopfront-3/tsconfig.app.json\" \"//wsl.localhost/Ubuntu/home/kiram_dev/sdms-mobile-shopfront-3/tsconfig.json\")",
+      "Read(///wsl.localhost/Ubuntu/home/kiram_dev/sdms-mobile-shopfront-3/**)",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc \"cd /home/kiram_dev/sdms-mobile-shopfront-3 && npx vite build 2>&1 | tail -5 && echo '---TSC---' && npx tsc -p tsconfig.app.json --noEmit 2>&1 | head -20 && echo '---DONE---'\")",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc \"cd /home/kiram_dev/sdms-mobile-shopfront-3 && npx tsc -p tsconfig.app.json --noEmit 2>&1 | head -20 && echo '---TSC DONE---' && npx vite build 2>&1 | tail -4\")"
+    ]
+  }
+}

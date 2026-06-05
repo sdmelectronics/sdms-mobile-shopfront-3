@@ -5,7 +5,7 @@ import { MapPin, Phone, Mail, Clock, Star, MessageCircle, Headphones, Heart } fr
 const ContactUsPage = () => {
     
       return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-warm-bg">
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
             <div className="container mx-auto px-4 lg:px-8 py-16">
@@ -129,9 +129,9 @@ const ContactUsPage = () => {
                     </div>
     
                     {/* Call Card */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="bg-gradient-to-br from-warm-accentSoft to-warm-accentTint border border-warm-line rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-warm-accent rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                           <Headphones className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -142,7 +142,7 @@ const ContactUsPage = () => {
                       <div className="mt-4">
                         <a 
                           href="tel:+256755869853" 
-                          className="inline-flex items-center text-blue-600 font-medium hover:text-blue-700"
+                          className="inline-flex items-center text-warm-accent font-medium hover:text-warm-accentPress"
                         >
                           +256 755 869 853 →
                         </a>
@@ -171,9 +171,9 @@ const ContactUsPage = () => {
                     </div>
     
                     {/* Visit Store Card */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="bg-gradient-to-br from-warm-hero to-warm-surface border border-warm-line rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-warm-ink rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                           <MapPin className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -182,7 +182,7 @@ const ContactUsPage = () => {
                         </div>
                       </div>
                       <div className="mt-4">
-                        <span className="inline-flex items-center text-purple-600 font-medium">
+                        <span className="inline-flex items-center text-warm-ink font-medium">
                           Kampala CBD →
                         </span>
                       </div>

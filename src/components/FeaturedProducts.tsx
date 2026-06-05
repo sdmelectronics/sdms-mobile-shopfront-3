@@ -1,13 +1,12 @@
 import { Suspense, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, Crown, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "./ProductCard";
 import { useFeaturedProducts } from "@/hooks/useFeaturedProducts";
-import { useDataInitializer } from "./DataInitializer";
 import { FeaturedProductsSectionSkeleton } from "./SkeletonComponents";
 
 interface Product {
@@ -39,8 +38,7 @@ const cardVariants = {
 };
 
 export const FeaturedProducts = () => {
-  const { isInitialized, isConnected } = useDataInitializer();
-  const { products, loading, loadingMore, hasMore, loadMore, refresh } = useFeaturedProducts();
+  const { products, loading, loadingMore, hasMore, loadMore, refresh, error } = useFeaturedProducts();
   const { addToCart } = useCart();
   const { toast } = useToast();
 
@@ -87,62 +85,65 @@ export const FeaturedProducts = () => {
     }
   }, []);
 
-  // Show loading skeleton if data is not initialized or loading
-  if (!isInitialized || loading) {
+  // Show loading skeleton while the first page is loading.
+  if (loading) {
     return <FeaturedProductsSectionSkeleton />;
   }
 
-  // Show error state if not connected
-  if (!isConnected) {
+  // Show an actionable error state (with retry) if the fetch failed.
+  if (error && products.length === 0) {
     return (
-      <section className="py-8 bg-gradient-to-r from-white/50 to-orange-600/50">
+      <section className="py-8 bg-transparent">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-600">Unable to load featured products. Please refresh the page.</p>
+          <p className="text-gray-600 mb-3">Unable to load featured products.</p>
+          <Button
+            onClick={refresh}
+            variant="outline"
+            className="bg-warm-surface text-warm-accent border-warm-line2 hover:bg-warm-accentSoft"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Try again
+          </Button>
         </div>
       </section>
     );
   }
 
+  // Nothing featured — render nothing rather than an empty shell.
+  if (products.length === 0) {
+    return null;
+  }
+
   return (
-    <section className="py-8 bg-gradient-to-r from-white/50 to-orange-600/50">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="text-center mb-8"
-        >
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-400/80 to-orange-500/80 text-black px-4 py-1 rounded-full text-sm">
-            <Crown className="w-4 h-4" />
-            LIMITED TIME OFFERS
-          </div>
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <h2 className="text-xl md:text-3xl font-bold text-black">
-              Best Value, All Day
+    <section className="py-8 bg-transparent">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8">
+        <div className="flex items-end justify-between gap-3 mb-5 md:mb-6">
+          <div>
+            <h2 className="font-display font-bold text-warm-ink text-[22px] md:text-[28px] tracking-tight">
+              Featured products
             </h2>
+            <p className="hidden md:block text-sm text-warm-muted mt-1.5">
+              Hand-picked deals from our catalog.
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
             <Button
               onClick={refresh}
               disabled={loading}
               variant="ghost"
               size="sm"
-              className="bg-white/20 text-orange-500 hover:bg-white/30"
+              className="text-warm-accent hover:bg-warm-accentSoft"
+              aria-label="Refresh featured products"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
+            <Link to="/products" className="text-sm font-semibold text-warm-accent whitespace-nowrap hover:text-warm-accentPress transition-colors">
+              View all →
+            </Link>
           </div>
-          <Link to="/products">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white/10 text-orange-500 border-white/30 hover:bg-white/20"
-            >
-              View All Products
-              <TrendingUp className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-[22px]">
           <AnimatePresence>
             <Suspense fallback={<div>Loading...</div>}>
               {products.map((product, i) => (
@@ -170,7 +171,7 @@ export const FeaturedProducts = () => {
               onClick={loadMore}
               disabled={loadingMore}
               variant="outline"
-              className="bg-white/10 text-orange-500 border-white/30 hover:bg-white/20"
+              className="bg-warm-surface text-warm-accent border-warm-line2 hover:bg-warm-accentSoft"
             >
               {loadingMore ? "Loading..." : "Load More Products"}
             </Button>

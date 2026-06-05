@@ -30,7 +30,7 @@ const InstallPWA = () => {
 
   return (
     visible && (
-      <Button onClick={handleInstall} className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow-lg">
+      <Button onClick={handleInstall} className="fixed bottom-4 right-4 bg-warm-accent text-white px-4 py-2 rounded-xl shadow-lg">
         Install App
       </Button>
     )

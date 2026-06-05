@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, ensureConnection } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BannerSlide {
   id: string;
@@ -52,14 +52,6 @@ export const HeroBanner = () => {
 
   const fetchBanners = async () => {
     try {
-      // Ensure Supabase connection is ready
-      const isConnected = await ensureConnection();
-      if (!isConnected) {
-        console.warn('Unable to connect to database, using default slides');
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase
         .from('banners')
         .select('*')

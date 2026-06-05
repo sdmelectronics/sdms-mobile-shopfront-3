@@ -101,12 +101,16 @@ export default defineConfig(({ mode }) => ({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-cache',
+              // Fall back to cache quickly if the network is slow, instead of
+              // hanging on a stalled request.
+              networkTimeoutSeconds: 3,
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 // 1 hour — API data should not be served stale for long
               },
               cacheableResponse: {
-                statuses: [0, 200]
+                // Only cache successful responses (drop opaque/status 0).
+                statuses: [200]
               }
             }
           },

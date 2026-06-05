@@ -1,125 +1,57 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, ensureConnection } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
-// Cache for promo banners
-const promoBannersCache = {
-  data: null,
-  timestamp: null,
-  loading: false,
-};
+// Admin-facing hook: reads ALL promo banners (active + inactive) from the
+// table and exposes CRUD mutations. The storefront uses a separate, active-only
+// query (see PromoBanners.tsx). Both share the ["promo-banners", ...] key
+// namespace so a mutation here invalidates the storefront view too.
+const BANNERS_KEY = ["promo-banners", "all"];
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Postgres timestamptz columns should get null (not empty string) when no date
+// is provided, and numeric/boolean fields must be well-typed.
+const sanitizeBannerData = (bannerData: any) => {
+  const sanitized = { ...bannerData };
 
-const isCacheValid = () => {
-  return (
-    promoBannersCache.data &&
-    promoBannersCache.timestamp &&
-    Date.now() - promoBannersCache.timestamp < CACHE_DURATION
-  );
+  if (!sanitized.start_date) sanitized.start_date = null;
+  if (!sanitized.end_date) sanitized.end_date = null;
+
+  if (sanitized.sort_order === '') sanitized.sort_order = 0;
+  if (sanitized.sort_order !== undefined) sanitized.sort_order = Number(sanitized.sort_order) || 0;
+  if (sanitized.is_active !== undefined) sanitized.is_active = Boolean(sanitized.is_active);
+
+  return sanitized;
 };
 
 export const usePromoBanners = () => {
-  const [banners, setBanners] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const { toast } = useToast();
-  
-  const abortControllerRef = useRef(null);
+  const queryClient = useQueryClient();
 
-  const fetchBanners = useCallback(async () => {
-    // Check cache first
-    if (isCacheValid()) {
-      setBanners(promoBannersCache.data!);
-      setLoading(false);
-      return;
-    }
-
-    // Prevent multiple simultaneous requests
-    if (promoBannersCache.loading) return;
-    promoBannersCache.loading = true;
-
-    // Cancel previous request if it exists
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    abortControllerRef.current = new AbortController();
-    setError(null);
-
-    try {
-      // Ensure Supabase connection is ready
-      const isConnected = await ensureConnection();
-      if (!isConnected) {
-        throw new Error('Unable to connect to database');
-      }
-      
+  const query = useQuery({
+    queryKey: BANNERS_KEY,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('promo_banners')
         .select('*')
         .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false })
-        .abortSignal(abortControllerRef.current.signal);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-      const transformedBanners = data || [];
-      
-      // Update cache
-      promoBannersCache.data = transformedBanners;
-      promoBannersCache.timestamp = Date.now();
-      
-      setBanners(transformedBanners);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        return; // Request was cancelled
-      }
-      
-      console.error("Error fetching promo banners:", err);
-      setError(err.message || 'Failed to load promo banners');
-      
-      toast({
-        title: "Error",
-        description: "Failed to load promo banners",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-      promoBannersCache.loading = false;
-      abortControllerRef.current = null;
-    }
-  }, [toast]);
+  // Invalidate the whole promo-banners namespace so both the admin list and the
+  // storefront carousel refetch.
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["promo-banners"] }),
+    [queryClient]
+  );
 
-  useEffect(() => {
-    fetchBanners();
-
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [fetchBanners]);
-
-  // Helper to sanitize banner data before sending to DB
-  const sanitizeBannerData = (bannerData: any) => {
-    const sanitized = { ...bannerData };
-
-    // Postgres timestamptz columns should get null (not empty string) when no date is provided
-    if (!sanitized.start_date) sanitized.start_date = null;
-    if (!sanitized.end_date) sanitized.end_date = null;
-
-    // Ensure numeric and boolean fields are well-typed
-    if (sanitized.sort_order === '') sanitized.sort_order = 0;
-    if (sanitized.sort_order !== undefined) sanitized.sort_order = Number(sanitized.sort_order) || 0;
-    if (sanitized.is_active !== undefined) sanitized.is_active = Boolean(sanitized.is_active);
-
-    return sanitized;
-  };
-
-  // Create a new banner
   const createBanner = useCallback(async (bannerData: any) => {
     try {
-      await ensureConnection();
       const payload = sanitizeBannerData(bannerData);
       const { data, error } = await supabase
         .from('promo_banners')
@@ -128,12 +60,7 @@ export const usePromoBanners = () => {
         .single();
 
       if (error) throw error;
-
-      // Invalidate cache and refresh
-      promoBannersCache.data = null;
-      promoBannersCache.timestamp = null;
-      await fetchBanners();
-
+      await invalidate();
       return data;
     } catch (err: any) {
       console.error('Error creating promo banner:', err);
@@ -144,12 +71,10 @@ export const usePromoBanners = () => {
       });
       throw err;
     }
-  }, [fetchBanners, toast]);
+  }, [invalidate, toast]);
 
-  // Update an existing banner
   const updateBanner = useCallback(async (id: string, bannerData: any) => {
     try {
-      await ensureConnection();
       const payload = sanitizeBannerData(bannerData);
       const { data, error } = await supabase
         .from('promo_banners')
@@ -159,11 +84,7 @@ export const usePromoBanners = () => {
         .single();
 
       if (error) throw error;
-
-      promoBannersCache.data = null;
-      promoBannersCache.timestamp = null;
-      await fetchBanners();
-
+      await invalidate();
       return data;
     } catch (err: any) {
       console.error('Error updating promo banner:', err);
@@ -174,12 +95,10 @@ export const usePromoBanners = () => {
       });
       throw err;
     }
-  }, [fetchBanners, toast]);
+  }, [invalidate, toast]);
 
-  // Delete a banner
   const deleteBanner = useCallback(async (id: string) => {
     try {
-      await ensureConnection();
       const { data, error } = await supabase
         .from('promo_banners')
         .delete()
@@ -188,11 +107,7 @@ export const usePromoBanners = () => {
         .single();
 
       if (error) throw error;
-
-      promoBannersCache.data = null;
-      promoBannersCache.timestamp = null;
-      await fetchBanners();
-
+      await invalidate();
       return data;
     } catch (err: any) {
       console.error('Error deleting promo banner:', err);
@@ -203,12 +118,10 @@ export const usePromoBanners = () => {
       });
       throw err;
     }
-  }, [fetchBanners, toast]);
+  }, [invalidate, toast]);
 
-  // Toggle active status
   const toggleBannerStatus = useCallback(async (id: string, isActive: boolean) => {
     try {
-      await ensureConnection();
       const { data, error } = await supabase
         .from('promo_banners')
         .update({ is_active: isActive })
@@ -217,11 +130,7 @@ export const usePromoBanners = () => {
         .single();
 
       if (error) throw error;
-
-      promoBannersCache.data = null;
-      promoBannersCache.timestamp = null;
-      await fetchBanners();
-
+      await invalidate();
       return data;
     } catch (err: any) {
       console.error('Error toggling promo banner status:', err);
@@ -232,16 +141,16 @@ export const usePromoBanners = () => {
       });
       throw err;
     }
-  }, [fetchBanners, toast]);
+  }, [invalidate, toast]);
 
   return {
-    banners,
-    loading,
-    error,
-    refresh: fetchBanners,
+    banners: query.data || [],
+    loading: query.isLoading,
+    error: query.isError ? (query.error as any)?.message || 'Failed to load promo banners' : null,
+    refresh: query.refetch,
     createBanner,
     updateBanner,
     deleteBanner,
     toggleBannerStatus,
   };
-}; 
+};

@@ -41,7 +41,7 @@ export const Marquee = () => {
 
   return (
     <div
-      className="bg-blue-500 text-white py-2 overflow-hidden lg:flex lg:justify-center"
+      className="bg-warm-panel text-white py-2 overflow-hidden lg:flex lg:justify-center"
       role="status"
       aria-label="Notification banner"
     >
@@ -63,7 +63,7 @@ export const Marquee = () => {
           {marqueeText}{" "}
           <a
             href="tel:+256-755-869-853"
-            className="underline hover:text-orange-300"
+            className="underline text-warm-accent hover:text-orange-300"
             onClick={(e) => e.stopPropagation()} // prevent marquee pause or other side effects
           >
             Call us at +256 755 869 853

@@ -4,25 +4,25 @@ import { Smartphone, Mail, MapPin, Phone, Facebook, Twitter, Instagram } from "l
 
 export const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-white pb-20 md:pb-12">
+    <footer className="bg-warm-panel text-white pb-20 md:pb-12">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-gradient-to-br from-warm-accent to-warm-accentPress rounded-xl flex items-center justify-center">
                 <Smartphone className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold">SDM Electronics</span>
+              <span className="text-xl font-bold font-display">SDM Electronics</span>
             </div>
-            <p className="text-gray-400 mb-4">
-              Uganda's premier destination for quality electronics and gadgets. 
+            <p className="text-white/60 mb-4">
+              Uganda's premier destination for quality electronics and gadgets.
               Serving customers with genuine products and excellent service.
             </p>
             <div className="flex space-x-4">
-              <Facebook className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Twitter className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
-              <Instagram className="w-5 h-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+              <Facebook className="w-5 h-5 text-white/60 hover:text-warm-accent cursor-pointer transition-colors" />
+              <Twitter className="w-5 h-5 text-white/60 hover:text-warm-accent cursor-pointer transition-colors" />
+              <Instagram className="w-5 h-5 text-white/60 hover:text-warm-accent cursor-pointer transition-colors" />
             </div>
           </div>
 
@@ -55,18 +55,18 @@ export const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Contact Info</h3>
             <div className="space-y-3">
               <div className="flex items-start space-x-3">
-                <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <MapPin className="w-5 h-5 text-warm-accent mt-0.5 flex-shrink-0" />
                 <span className="text-gray-400">
                   Arua Park Plaza Shop Number C1-287<br />
                   William Street Kampala-Uganda
                 </span>
               </div>
               <div className="flex items-center space-x-3">
-                <Phone className="w-5 h-5 text-gray-400" />
+                <Phone className="w-5 h-5 text-warm-accent" />
                 <span className="text-gray-400">+256755869853</span>
               </div>
               <div className="flex items-center space-x-3">
-                <Mail className="w-5 h-5 text-gray-400" />
+                <Mail className="w-5 h-5 text-warm-accent" />
                 <span className="text-gray-400">sdmelectronics256@gmail.com</span>
               </div>
             </div>
@@ -74,7 +74,7 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-8 pt-8">
+        <div className="border-t border-white/10 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
           
 
@@ -91,7 +91,7 @@ export const Footer = () => {
               © 2024 SDM Electronics. All rights reserved.
             </p>
             <footer className="text-center text-gray-500 text-sm py-4">
-  Created by <a href="https://kiram.netlify.app" className="text-blue-500 hover:underline">Akram Dev</a>
+  Created by <a href="https://kiram.netlify.app" className="text-warm-accent hover:underline">Akram Dev</a>
 </footer>
         </div>
       </div>

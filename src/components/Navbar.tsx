@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, Home, ShoppingBag } from "lucide-react";
+import { Search, Heart, ShoppingCart } from "lucide-react";
 import { CartButton } from "./CartButton";
+import { WishlistButton } from "./WishlistButton";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
 
 export const Navbar = () => {
@@ -8,6 +11,8 @@ export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { count: wishlistCount } = useWishlist();
+  const { itemCount: cartCount } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export const Navbar = () => {
      
 
       {/* Main Navigation */}
-      <nav className="bg-gradient-to-r from-orange-500 to-orange-600 shadow-md">
+      <nav className="bg-warm-bg/90 backdrop-blur-md border-b border-warm-line">
         <div className="container mx-auto px-4 lg:px-8 py-3">
           <div
             className={`flex items-center justify-between w-full flex-wrap gap-4 transition-all duration-500 ease-in-out ${
@@ -78,7 +83,7 @@ export const Navbar = () => {
                                   <img 
                     src="/sdmlogo.png" 
                     alt="SDM Electronics Logo" 
-                    className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain rounded-lg shadow-md bg-white/10 p-1 transition-opacity duration-200 ${
+                    className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain rounded-xl p-1 transition-opacity duration-200 ${
                       imageLoaded ? 'opacity-100' : 'opacity-0'
                     }`}
                   onLoad={() => setImageLoaded(true)}
@@ -89,16 +94,16 @@ export const Navbar = () => {
                 />
                              ) : (
                  /* Fallback text logo */
-                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center shadow-md">
-                   <span className="text-white font-extrabold text-sm sm:text-lg lg:text-xl">SDM</span>
+                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-warm-panel to-[#0F1623] rounded-xl flex items-center justify-center shadow-md">
+                   <span className="text-white font-extrabold text-sm sm:text-lg lg:text-xl font-display">SDM</span>
                  </div>
                )}
-              
+
               <div className="flex flex-col justify-center">
-                <span className="text-sm sm:text-lg lg:text-xl font-bold text-white leading-tight">
+                <span className="text-sm sm:text-lg lg:text-xl font-bold text-warm-ink leading-tight font-display">
                   SDM ELECTRONICS
                 </span>
-                <span className="text-xs lg:text-sm text-white/80 leading-tight hidden sm:block">
+                <span className="text-[10px] lg:text-xs text-warm-accent font-bold uppercase tracking-[0.14em] leading-tight hidden sm:block">
                   Quality Electronics
                 </span>
               </div>
@@ -109,44 +114,59 @@ export const Navbar = () => {
               {/* Desktop Navigation Links */}
               <a
                 href="/"
-                className="text-white/90 hover:text-white font-medium transition-colors text-sm lg:text-base hidden md:block"
+                className="text-warm-ink/80 hover:text-warm-accent font-semibold transition-colors text-sm lg:text-base hidden md:block"
               >
                 Home
               </a>
               <a
                 href="/products"
-                className="text-white/90 hover:text-white font-medium transition-colors text-sm lg:text-base hidden md:block"
+                className="text-warm-ink/80 hover:text-warm-accent font-semibold transition-colors text-sm lg:text-base hidden md:block"
               >
                 Products
               </a>
               <a
                 href="/aboutUsPage"
-                className="text-white/90 hover:text-white font-medium transition-colors text-sm lg:text-base hidden lg:block"
+                className="text-warm-ink/80 hover:text-warm-accent font-semibold transition-colors text-sm lg:text-base hidden lg:block"
               >
                 About
               </a>
               <a
                 href="/contactUsPage"
-                className="text-white/90 hover:text-white font-medium transition-colors text-sm lg:text-base hidden lg:block"
+                className="text-warm-ink/80 hover:text-warm-accent font-semibold transition-colors text-sm lg:text-base hidden lg:block"
               >
                 Contact
               </a>
               
-              {/* Mobile Icons */}
+              {/* Mobile icons: wishlist + cart (clean, design-style) */}
               <a
-                href="/"
-                className="md:hidden text-white/90 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                href="/wishlist"
+                aria-label="Wishlist"
+                className="md:hidden relative text-warm-ink/80 hover:text-warm-accent p-2 rounded-full hover:bg-warm-accentSoft transition-colors"
               >
-                <Home className="w-5 h-5" />
+                <Heart className={`w-5 h-5 ${wishlistCount > 0 ? "fill-warm-accent text-warm-accent" : ""}`} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-warm-accent text-white text-[10px] font-bold flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
               </a>
               <a
-                href="/products"
-                className="md:hidden text-white/90 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                href="/checkout"
+                aria-label="Cart"
+                className="md:hidden relative text-warm-ink/80 hover:text-warm-accent p-2 rounded-full hover:bg-warm-accentSoft transition-colors"
               >
-                <ShoppingBag className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-warm-accent text-white text-[10px] font-bold flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
               </a>
-              
-              {/* Cart Button - Desktop/Tablet only */}
+
+              {/* Wishlist + Cart Buttons - Desktop/Tablet only */}
+              <div className="hidden md:block">
+                <WishlistButton />
+              </div>
               <div className="hidden md:block">
                 <CartButton />
               </div>
@@ -154,14 +174,14 @@ export const Navbar = () => {
               {/* Call to Action Button */}
               <a
                 href="tel:+256755869853"
-                className="hidden sm:flex items-center bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full text-sm font-medium transition-colors"
+                className="hidden sm:flex items-center bg-warm-accent hover:bg-warm-accentPress text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow-sm"
               >
                 <span className="mr-2">📞</span>
                 <span className="hidden lg:inline">Call Now</span>
               </a>
-              
+
               {/* Currency Display */}
-              <div className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">
+              <div className="hidden md:flex bg-warm-accentSoft text-warm-accent px-3 py-1 rounded-full text-sm font-semibold">
                 <span className="flex items-center space-x-1">
                   <span className="text-lg">🇺🇬</span>
                   <span className="hidden sm:inline text-xs">UGX</span>
@@ -180,15 +200,10 @@ export const Navbar = () => {
                 placeholder="Search for electronics..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 rounded-lg bg-white/95 backdrop-blur-sm text-gray-800 px-4 pl-12 pr-4 focus:ring-2 focus:ring-white/30 focus:bg-white placeholder-gray-500 text-sm lg:text-base outline-none shadow-lg border border-white/20 transition-all duration-200"
+                className="w-full h-11 rounded-full bg-warm-surface text-warm-ink px-4 pl-12 pr-4 focus:ring-2 focus:ring-warm-accent/30 focus:border-warm-accent placeholder-warm-faint text-sm lg:text-base outline-none shadow-sm border border-warm-line2 transition-all duration-200"
               />
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-gray-500" />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-md transition-colors text-sm font-medium shadow-md"
-              >
-                Search
-              </button>
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-warm-faint" />
+              <button type="submit" className="sr-only">Search</button>
             </div>
           </form>
         </div>

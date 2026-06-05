@@ -1,66 +1,55 @@
-import { HeroBanner } from "@/components/HeroBanner";
+import { WarmHero } from "@/components/WarmHero";
 import { FeaturedCategories } from "@/components/FeaturedCategories";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
+import { ValueBand } from "@/components/ValueBand";
 import PromoBanners from "@/components/PromoBanners";
 import RecentProducts from "@/components/RecentProducts";
 
-import { Mail } from "lucide-react";
-import ShopImageCarousel from "@/components/ShopImageCarousek";
-
 const Index = () => {
   return (
-    <main className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="relative z-10">
-        <HeroBanner />
-      </section>
+    <main className="min-h-screen bg-transparent">
+      {/* Hero — Warm Premium split hero (design) */}
+      <WarmHero />
 
-      {/* Promotional Banners */}
-      <section className="">
+      {/* Shop by category */}
+      <FeaturedCategories />
+
+      {/* Featured Promotions */}
+      <section className="pt-10 md:pt-14">
         <PromoBanners />
       </section>
 
-      {/* Featured Categories */}
-      <section className=" container mx-auto px-4">
-        <FeaturedCategories />
-      </section>
+      {/* Featured products */}
+      <FeaturedProducts />
 
-      {/* Featured Products */}
-      <section className=" pb-4 container mx-auto px-4">
-        <FeaturedProducts />
-      </section>
+      {/* Value band */}
+      <ValueBand />
 
-      {/* Recently Purchased Products */}
+      {/* Recently added */}
       <RecentProducts />
 
-      {/* Image Carousel */}
-      <section className="py-12 container mx-auto px-4">
-        <ShopImageCarousel />
-      </section>
-
-      {/* Newsletter Section */}
-     {/* Newsletter Section */}
-     <section className="py-8 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="bg-white/10 p-3 rounded-full">
-              <Mail className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold mb-1">Stay Updated with Latest Tech</h2>
-          <p className="text-orange-100 mb-6 max-w-xl mx-auto text-sm">
-            Subscribe for exclusive deals, product launches, and insights.
+      {/* Newsletter */}
+      <section className="max-w-[1240px] mx-auto px-4 md:px-8 pt-10 md:pt-14 pb-4">
+        <div className="bg-warm-panel text-white rounded-[26px] px-6 py-10 md:p-[52px] text-center relative overflow-hidden">
+          <span className="text-warm-accent font-bold uppercase tracking-[0.14em] text-xs">
+            Stay in the loop
+          </span>
+          <h2 className="font-display text-[22px] md:text-[28px] font-bold mb-2 mt-2 tracking-tight">
+            Latest tech, exclusive deals.
+          </h2>
+          <p className="text-white/70 mb-6 max-w-[440px] mx-auto text-sm md:text-[15px]">
+            Subscribe for product launches, price drops, and insider offers across Uganda.
           </p>
-          <form className="max-w-md mx-auto flex flex-col sm:flex-row items-center gap-3">
+          <form className="max-w-[460px] mx-auto flex flex-col sm:flex-row items-center gap-2.5">
             <input
               type="email"
               aria-label="Email for newsletter"
               placeholder="Enter your email"
-              className="flex-1 w-full px-4 py-2 rounded-md text-gray-800 focus:outline-none focus:ring-2 focus:ring-white text-sm"
+              className="flex-1 w-full h-[50px] px-[18px] rounded-xl text-warm-ink focus:outline-none focus:ring-2 focus:ring-warm-accent text-sm"
             />
             <button
               type="submit"
-              className="bg-white text-orange-600 px-5 py-2.5 rounded-md font-semibold hover:bg-orange-100 transition-colors w-full sm:w-auto text-sm"
+              className="bg-warm-accent text-white px-[26px] h-[50px] rounded-xl font-bold hover:bg-warm-accentPress transition-colors w-full sm:w-auto text-sm"
             >
               Subscribe
             </button>

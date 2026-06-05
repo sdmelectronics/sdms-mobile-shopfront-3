@@ -23,36 +23,52 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
   },
 });
 
-// Add connection health check
+// Add connection health check.
+//
+// IMPORTANT: a successful probe is cached permanently (isConnected), but a
+// FAILED probe must NOT be cached — otherwise a single transient failure on
+// first load would poison every subsequent call for the life of the tab and
+// the only recovery would be a full page reload. We therefore reset
+// `connectionPromise` to null once it settles so the next caller retries, and
+// we bound the probe with a timeout so a hanging request can't leave callers
+// awaiting forever.
 let isConnected = false;
 let connectionPromise: Promise<boolean> | null = null;
 
+const CONNECTION_TIMEOUT_MS = 6000;
+
 export const ensureConnection = async (): Promise<boolean> => {
   if (isConnected) return true;
-  
+
+  // De-dupe concurrent callers onto a single in-flight probe.
   if (connectionPromise) return connectionPromise;
-  
+
   connectionPromise = (async () => {
     try {
-      // Test connection with a simple query
+      // Test connection with a simple, time-bounded query.
       const { error } = await supabase
         .from('products')
         .select('id')
-        .limit(1);
-      
+        .limit(1)
+        .abortSignal(AbortSignal.timeout(CONNECTION_TIMEOUT_MS));
+
       if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is fine
         console.warn('Supabase connection test failed:', error);
         return false;
       }
-      
+
       isConnected = true;
       return true;
     } catch (error) {
       console.error('Supabase connection error:', error);
       return false;
+    } finally {
+      // Allow the next caller to retry after a failure (success stays cached
+      // via `isConnected`, so this never re-runs the probe once connected).
+      connectionPromise = null;
     }
   })();
-  
+
   return connectionPromise;
 };
 
@@ -66,6 +82,3 @@ supabase.auth.onAuthStateChange((event, session) => {
     }
   }
 });
-
-// Export connection status
-export { isConnected };

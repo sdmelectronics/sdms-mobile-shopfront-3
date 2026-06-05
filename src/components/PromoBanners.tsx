@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
-import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "./ui/button.tsx";
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PromoBanner {
   id: string;
@@ -16,74 +17,28 @@ interface PromoBanner {
   sort_order: number;
 }
 
-// Cache for promo banners
-const promoBannersCache = {
-  data: null as PromoBanner[] | null,
-  timestamp: 0,
-  loading: false
-};
-
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
 function PromoBanners() {
-  const [banners, setBanners] = useState<PromoBanner[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Check if cache is valid
-  const isCacheValid = useCallback(() => {
-    return promoBannersCache.data && 
-           promoBannersCache.timestamp && 
-           Date.now() - promoBannersCache.timestamp < CACHE_DURATION;
-  }, []);
-
-  // Fetch promo banners
-  const fetchBanners = useCallback(async () => {
-    // Check cache first
-    if (isCacheValid()) {
-      setBanners(promoBannersCache.data!);
-      setLoading(false);
-      return;
-    }
-
-    // Prevent multiple simultaneous requests
-    if (promoBannersCache.loading) return;
-    promoBannersCache.loading = true;
-
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const { data, error } = await supabase
-        .rpc('get_active_promo_banners');
-
+  // Storefront view: active banners only, via RPC. React Query handles caching,
+  // dedup, retry and loading state (shared key namespace with the admin hook so
+  // admin edits invalidate this automatically).
+  const {
+    data: banners = [],
+    isLoading: loading,
+    error: queryError,
+  } = useQuery<PromoBanner[]>({
+    queryKey: ["promo-banners", "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_active_promo_banners');
       if (error) throw error;
+      return (data || []) as PromoBanner[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-      const transformedBanners = data || [];
-      
-      // Update cache
-      promoBannersCache.data = transformedBanners;
-      promoBannersCache.timestamp = Date.now();
-      
-      setBanners(transformedBanners);
-      setError(null);
-    } catch (err: any) {
-      console.error("Error fetching promo banners:", err);
-      setError(err.message || 'Failed to load promo banners');
-      
-      // Fallback to empty array
-      setBanners([]);
-    } finally {
-      setLoading(false);
-      promoBannersCache.loading = false;
-    }
-  }, [isCacheValid]);
-
-  // Load banners on mount
-  useEffect(() => {
-    fetchBanners();
-  }, [fetchBanners]);
+  const error = queryError ? (queryError as any)?.message || 'Failed to load promo banners' : null;
 
   const nextSlide = () => {
     if (banners.length === 0) return;
@@ -121,21 +76,19 @@ function PromoBanners() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-            <Sparkles className="text-blue-500 w-6 h-6" />
+          <h2 className="font-display text-[22px] md:text-[28px] font-bold text-warm-ink inline-flex items-center gap-2.5 tracking-tight">
+            <Zap className="text-warm-accent fill-warm-accent w-[22px] h-[22px]" />
             Featured Promotions
           </h2>
-          <p className="text-gray-600 text-sm">
-            Loading promotional content...
-          </p>
+          <p className="text-warm-muted text-sm mt-1.5">Discover our latest deals and premium products.</p>
         </div>
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+        <div className="bg-warm-surface rounded-2xl md:rounded-[26px] shadow-md border border-warm-line p-8 md:p-10 md:min-h-[230px]">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-4 bg-warm-line rounded w-1/3"></div>
+            <div className="h-4 bg-warm-line rounded w-1/2"></div>
+            <div className="h-4 bg-warm-line rounded w-2/3"></div>
           </div>
         </div>
       </div>
@@ -144,18 +97,18 @@ function PromoBanners() {
 
   if (error || banners.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-            <Sparkles className="text-blue-500 w-6 h-6" />
+          <h2 className="font-display text-[22px] md:text-[28px] font-bold text-warm-ink inline-flex items-center gap-2.5 tracking-tight">
+            <Zap className="text-warm-accent fill-warm-accent w-[22px] h-[22px]" />
             Featured Promotions
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-warm-muted text-sm mt-1.5">
             {error ? 'Unable to load promotions' : 'No promotions available'}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
-          <p className="text-gray-500">
+        <div className="bg-warm-surface rounded-2xl md:rounded-[26px] shadow-md border border-warm-line p-8 md:p-10 text-center md:min-h-[230px] flex items-center justify-center">
+          <p className="text-warm-muted">
             {error || 'Check back later for exciting promotions!'}
           </p>
         </div>
@@ -167,121 +120,98 @@ function PromoBanners() {
   const bannerLink = banner.link_url || `/products?category=${banner.category_slug}`;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-[1240px] mx-auto px-4 md:px-8">
+      {/* Head */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-          <Sparkles className="text-blue-500 w-6 h-6" />
+        <h2 className="font-display text-[22px] md:text-[28px] font-bold text-warm-ink inline-flex items-center gap-2.5 tracking-tight">
+          <Zap className="text-warm-accent fill-warm-accent w-[22px] h-[22px]" />
           Featured Promotions
         </h2>
-        <p className="text-gray-600 text-sm">
-          Discover our latest deals and premium products
+        <p className="text-warm-muted text-sm mt-1.5">
+          Discover our latest deals and premium products.
         </p>
       </div>
 
-      <div
-        className="relative overflow-hidden rounded-xl bg-white shadow-lg border border-gray-200 transition-all duration-300 hover:shadow-xl"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="flex items-center min-h-[100px]">
-          {/* Text Section */}
-          <div className="p-4 w-2/3 flex flex-col justify-center bg-gradient-to-br from-gray-50 to-white">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                {banner.badge_text && (
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
-                    {banner.badge_text}
-                  </span>
-                )}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">
-                  {banner.title}
-                </h3>
-                {banner.subtitle && (
-                  <p className="text-blue-600 font-medium text-xs">
-                    {banner.subtitle}
-                  </p>
-                )}
-              </div>
-              {banner.description && (
-                <p className="text-gray-600 text-xs leading-relaxed">
-                  {banner.description}
-                </p>
-              )}
-              <a href={bannerLink}>
-                <Button
-                  className="w-fit bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-lg transition-all duration-200 transform hover:scale-105"
-                  size="sm"
-                >
-                  {banner.cta_text}
-                </Button>
-              </a>
-            </div>
+      {/* Stage */}
+      <div className="relative">
+        <div
+          className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] items-stretch bg-warm-surface border border-warm-line rounded-2xl md:rounded-[26px] overflow-hidden shadow-md md:min-h-[230px]"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {/* Text */}
+          <div className="order-2 md:order-1 flex flex-col items-start justify-center gap-2.5 md:gap-3.5 p-6 md:p-10 bg-gradient-to-br from-warm-hero to-warm-surface">
+            {banner.badge_text && (
+              <span className="text-[11px] font-bold uppercase tracking-wide text-warm-accent bg-warm-accentSoft px-3 py-[5px] rounded-full">
+                {banner.badge_text}
+              </span>
+            )}
+            <h3 className="font-display font-extrabold text-warm-ink text-[23px] md:text-[30px] leading-[1.1] tracking-tight m-0">
+              {banner.title}
+            </h3>
+            {banner.subtitle && (
+              <p className="text-sm font-bold text-warm-accent -mt-1.5">{banner.subtitle}</p>
+            )}
+            {banner.description && (
+              <p className="text-sm leading-relaxed text-warm-muted m-0">{banner.description}</p>
+            )}
+            <a href={bannerLink}>
+              <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-warm-accent text-white font-semibold text-sm px-[22px] py-3 hover:bg-warm-accentPress active:scale-[0.97] transition-all">
+                {banner.cta_text}
+              </button>
+            </a>
           </div>
-          
-          {/* Image Section */}
-          <div className="w-1/3 h-[100px] relative overflow-hidden">
+
+          {/* Media */}
+          <div className="order-1 md:order-2 relative overflow-hidden aspect-[16/9] md:aspect-auto">
             <img
               src={banner.image_url}
               alt={banner.title}
-              className="w-full h-full object-contain transition-transform duration-500 hover:scale-105"
+              className="w-full h-full object-cover"
               onError={(e) => {
-                // Fallback to placeholder if image fails to load
                 const target = e.target as HTMLImageElement;
                 target.src = '/placeholder.svg';
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
         </div>
 
-        {/* Navigation Buttons */}
+        {/* Arrows */}
         {banners.length > 1 && (
           <>
-            <Button
+            <button
               onClick={prevSlide}
-              className="absolute top-1/2 left-2 -translate-y-1/2 w-8 h-8 bg-white/90 hover:bg-white text-gray-700 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-110"
+              aria-label="Previous"
+              className="absolute top-1/2 left-3.5 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 shadow-md text-warm-ink hover:bg-warm-accent hover:text-white flex items-center justify-center transition-colors z-[2]"
             >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            
-            <Button
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
               onClick={nextSlide}
-              className="absolute top-1/2 right-2 -translate-y-1/2 w-8 h-8 bg-white/90 hover:bg-white text-gray-700 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-110"
+              aria-label="Next"
+              className="absolute top-1/2 right-3.5 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 shadow-md text-warm-ink hover:bg-warm-accent hover:text-white flex items-center justify-center transition-colors z-[2]"
             >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </>
         )}
       </div>
 
-      {/* Dot Indicators */}
+      {/* Dots */}
       {banners.length > 1 && (
-        <div className="flex justify-center mt-4 space-x-2">
-          {banners.map((banner, index) => (
-            <Button
-              key={banner.id}
+        <div className="flex justify-center gap-2 mt-[18px]">
+          {banners.map((b, index) => (
+            <button
+              key={b.id}
               onClick={() => goToSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              aria-label={`Slide ${index + 1}`}
+              className={`h-2 rounded-full transition-all duration-300 ${
                 index === currentIndex
-                  ? "bg-blue-600 w-6"
-                  : "bg-gray-300 hover:bg-gray-400"
+                  ? "bg-warm-accent w-[22px]"
+                  : "bg-warm-line2 hover:bg-warm-faint w-2"
               }`}
             />
           ))}
-        </div>
-      )}
-
-      {/* Progress Bar */}
-      {banners.length > 1 && (
-        <div className="mt-4 w-full bg-gray-200 rounded-full h-1">
-          <div
-            className="bg-blue-600 h-1 rounded-full transition-all duration-300"
-            style={{
-              width: `${((currentIndex + 1) / banners.length) * 100}%`,
-            }}
-          />
         </div>
       )}
     </div>

@@ -145,7 +145,7 @@ export const SearchBar = () => {
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {product.name}
                       </p>
-                      <p className="text-sm text-blue-600 font-semibold">
+                      <p className="text-sm text-warm-accent font-semibold">
                         {formatPrice(product.price)}
                       </p>
                     </div>

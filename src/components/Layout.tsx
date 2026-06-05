@@ -7,13 +7,13 @@ import { Marquee } from "./Marquee";
 
 export const Layout = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-warm-bg">
       <Marquee />
       <Navbar />
       <main className="pb-4 md:pb-0">
         <Outlet />
       </main>
-      
+
       <Footer />
       <NavigatorBar />
     </div>
