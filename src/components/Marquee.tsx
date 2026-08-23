@@ -55,11 +55,19 @@ export const Marquee = () => {
         <span className="text-md font-medium mx-4 animate-marquee lg:animate-bounce-text">
           {marqueeText}{" "}
           <a
-            href="tel:+256-755-869-853"
+            href="tel:+256755869853"
             className="underline text-warm-accent hover:text-orange-300"
             onClick={(e) => e.stopPropagation()} // prevent marquee pause or other side effects
           >
-            Call us at +256 755 869 853
+            Call us at 0755 869 853
+          </a>{" "}
+          |{" "}
+          <a
+            href="tel:+256705095221"
+            className="underline text-warm-accent hover:text-orange-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            0705 095 221
           </a>{" "}
           | Email: sdmelectronics256@gmail.com
         </span>
