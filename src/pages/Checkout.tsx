@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WHATSAPP_NUMBER } from '@/lib/contact';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -145,7 +146,7 @@ Total (excluding shipping): ${formatPrice(orderTotal)}
 
 ${customerData.notes ? `Notes: ${customerData.notes}` : ''}`;
 
-      const whatsappUrl = `https://wa.me/+256755869853?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 
       await supabase
         .from('orders')

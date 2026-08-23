@@ -9,6 +9,8 @@ import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { getProductRating, generateSingleProductRating } from '@/lib/ratingUtils';
+import { CallMenu } from '@/components/CallMenu';
+import { WHATSAPP_URL } from '@/lib/contact';
 
 // Lazy load heavy components with preload
 const SpecificationsCard = lazy(() => 
@@ -664,7 +666,7 @@ export default function ProductDetail() {
               </span>
             </div>
             <a
-              href="https://wa.me/256755869853"
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center text-center gap-1.5 rounded-xl border border-warm-line bg-warm-bg px-2 py-3 hover:border-warm-accent/40 transition-colors"
@@ -678,11 +680,11 @@ export default function ProductDetail() {
 
           {/* CTA — sticky bottom bar on mobile (above the tab bar), inline on desktop */}
           <div className="fixed bottom-[66px] left-0 right-0 z-30 flex gap-3 items-center bg-warm-surface border-t border-warm-line px-4 py-3 shadow-[0_-2px_20px_rgba(80,55,35,0.10)] md:static md:bottom-auto md:z-auto md:px-0 md:py-0 md:border-0 md:bg-transparent md:shadow-none">
-            <a href="tel:+256755869853" aria-label="Call to order" className="flex-shrink-0">
-              <Button size="lg" className="bg-warm-ok hover:opacity-90 text-white px-4">
+            <CallMenu side="top" align="start" className="flex-shrink-0">
+              <Button size="lg" aria-label="Call to order" className="bg-warm-ok hover:opacity-90 text-white px-4">
                 <Phone className="w-5 h-5" />
               </Button>
-            </a>
+            </CallMenu>
             <Button
               onClick={handleAddToCart}
               className="flex-1 bg-warm-accent hover:bg-warm-accentPress text-white"

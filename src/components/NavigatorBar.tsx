@@ -13,6 +13,8 @@ import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
 import { useActiveCategories } from '@/hooks/useCategories';
+import { CallMenu } from '@/components/CallMenu';
+import { WHATSAPP_URL } from '@/lib/contact';
 import clsx from 'clsx';
 
 const NAV_HEIGHT = 66;
@@ -135,10 +137,10 @@ const MobileBottomNavigation = () => {
         navigate('/checkout');
         break;
       case 'call':
-        window.location.href = 'tel:+256755869853';
+        // Handled by the CallMenu wrapper in the render below.
         break;
       case 'whatsapp':
-        window.open('https://wa.me/256755869853', '_blank');
+        window.open(WHATSAPP_URL, '_blank');
         break;
     }
   }, [navigate]);
@@ -175,10 +177,10 @@ const MobileBottomNavigation = () => {
             : active
             ? 'text-warm-accent'
             : 'text-warm-muted';
-          return (
+
+          const tab = (
             <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
+              onClick={item.id === 'call' ? undefined : () => handleNavClick(item.id)}
               className={clsx('flex flex-col items-center justify-center flex-1 gap-[3px] py-[5px] relative focus:outline-none', colorClass)}
               style={{ minWidth: 0 }}
               aria-label={item.label}
@@ -198,6 +200,16 @@ const MobileBottomNavigation = () => {
               </span>
               <span className="text-[10.5px] font-semibold">{item.label}</span>
             </button>
+          );
+
+          // The Call tab opens a chooser rather than dialling, because the shop
+          // publishes two lines and a tap can only reach one of them.
+          return item.id === 'call' ? (
+            <CallMenu key={item.id} side="top" align="center" className="flex-1 flex">
+              {tab}
+            </CallMenu>
+          ) : (
+            <div key={item.id} className="flex-1 flex">{tab}</div>
           );
         })}
       </nav>

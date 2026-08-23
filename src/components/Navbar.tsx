@@ -5,6 +5,7 @@ import { WishlistButton } from "./WishlistButton";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useCart } from "@/hooks/useCart";
 import { useNavigate } from "react-router-dom";
+import { CallMenu } from "@/components/CallMenu";
 
 export const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,14 +172,17 @@ export const Navbar = () => {
                 <CartButton />
               </div>
               
-              {/* Call to Action Button */}
-              <a
-                href="tel:+256755869853"
-                className="hidden sm:flex items-center bg-warm-accent hover:bg-warm-accentPress text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow-sm"
-              >
-                <span className="mr-2">📞</span>
-                <span className="hidden lg:inline">Call Now</span>
-              </a>
+              {/* Call to Action Button — offers both shop lines */}
+              <CallMenu>
+                <button
+                  type="button"
+                  aria-label="Call the shop"
+                  className="hidden sm:flex items-center bg-warm-accent hover:bg-warm-accentPress text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow-sm"
+                >
+                  <span className="mr-2">📞</span>
+                  <span className="hidden lg:inline">Call Now</span>
+                </button>
+              </CallMenu>
 
               {/* Currency Display */}
               <div className="hidden md:flex bg-warm-accentSoft text-warm-accent px-3 py-1 rounded-full text-sm font-semibold">
