@@ -19,6 +19,13 @@ createRoot(document.getElementById("root")!).render(
   </ErrorBoundary>
   </BrowserRouter>
 );
+// Announce which build this browser is actually running. If a user reports a
+// problem, ask them for this line: it tells you immediately whether they are
+// on the current deploy or still being served an older cached shell.
+// terser strips console.log in production, so use console.info.
+console.info(`SDM Electronics — build ${__BUILD_ID__}`);
+(window as any).__BUILD_ID__ = __BUILD_ID__;
+
 // Service worker registration is handled by vite-plugin-pwa, which generates
 // /sw.js (Workbox) and injects /registerSW.js into index.html at build time.
 //

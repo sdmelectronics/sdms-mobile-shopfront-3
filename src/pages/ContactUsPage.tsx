@@ -32,8 +32,11 @@ const ContactUsPage = () => {
                     <div>
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">Phone</h3>
                       <p className="text-gray-600">Call us for immediate assistance</p>
-                      <a href="tel:+256755869853" className="text-orange-600 hover:text-orange-700 font-medium">
-                        +256 755 869 853
+                      <a href="tel:+256755869853" className="block text-orange-600 hover:text-orange-700 font-medium">
+                        0755 869 853
+                      </a>
+                      <a href="tel:+256705095221" className="block text-orange-600 hover:text-orange-700 font-medium">
+                        0705 095 221
                       </a>
                     </div>
                   </div>
@@ -45,8 +48,8 @@ const ContactUsPage = () => {
                     <div>
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">Email</h3>
                       <p className="text-gray-600">Send us your questions anytime</p>
-                      <a href="mailto:sdmelectromics256@gmail.com" className="text-orange-600 hover:text-orange-700 font-medium">
-                        sdmelectromics256@gmail.com
+                      <a href="mailto:sdmelectronics256@gmail.com" className="text-orange-600 hover:text-orange-700 font-medium">
+                        sdmelectronics256@gmail.com
                       </a>
                     </div>
                   </div>
@@ -59,8 +62,8 @@ const ContactUsPage = () => {
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">Location</h3>
                       <p className="text-gray-600">Visit our showroom</p>
                       <p className="text-gray-700 font-medium">
-                        Arua Park Plaza Shop Number C1-287<br />
-                        William Street Kampala-Uganda
+                        Arua Park Plaza, Shop C2-386<br />
+                        Kampala, Uganda
                       </p>
                     </div>
                   </div>
@@ -139,12 +142,18 @@ const ContactUsPage = () => {
                           <p className="text-sm text-gray-600">Speak to our experts</p>
                         </div>
                       </div>
-                      <div className="mt-4">
-                        <a 
-                          href="tel:+256755869853" 
+                      <div className="mt-4 flex flex-col gap-1">
+                        <a
+                          href="tel:+256755869853"
                           className="inline-flex items-center text-warm-accent font-medium hover:text-warm-accentPress"
                         >
-                          +256 755 869 853 →
+                          0755 869 853 →
+                        </a>
+                        <a
+                          href="tel:+256705095221"
+                          className="inline-flex items-center text-warm-accent font-medium hover:text-warm-accentPress"
+                        >
+                          0705 095 221 →
                         </a>
                       </div>
                     </div>

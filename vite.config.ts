@@ -3,7 +3,18 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Identifies the exact build a browser is running. Vercel exposes the commit
+// SHA at build time; locally we fall back to a timestamp. Surfaced in the
+// console on boot so "is this device on the new version or a cached old one?"
+// is a question you can answer in two seconds instead of guessing.
+const BUILD_ID =
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+  new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+
 export default defineConfig(({ mode }) => ({
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -16,9 +27,13 @@ export default defineConfig(({ mode }) => ({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: mode === 'production',
+        // Deliberately NOT drop_console: that strips console.warn and
+        // console.error too, which is exactly what you need when diagnosing a
+        // problem on someone else's device. Drop the noisy levels only and
+        // keep warn/error (and the build stamp logged from main.tsx).
+        drop_console: false,
         drop_debugger: mode === 'production',
-        pure_funcs: mode === 'production' ? ['console.log', 'console.info', 'console.debug'] : [],
+        pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : [],
       },
       mangle: {
         toplevel: true,
@@ -95,6 +110,10 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globIgnores: ['**/node_modules/@vercel/analytics/dist/next/**'],
+        // Delete precaches left by previous builds. Without this, superseded
+        // precache entries linger and a device can keep serving an old app
+        // shell long after a new version shipped.
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           // NOTE: Supabase requests are deliberately NOT cached here.
           //
