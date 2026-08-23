@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "build:analyze": "vite build --mode production && npx vite-bundle-analyzer dist",
     "lint": "eslint .",
+    "check:auth-deadlock": "node scripts/check-auth-deadlock.cjs",
     "preview": "vite preview"
   },
   "dependencies": {

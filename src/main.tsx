@@ -19,27 +19,39 @@ createRoot(document.getElementById("root")!).render(
   </ErrorBoundary>
   </BrowserRouter>
 );
+// Service worker registration is handled by vite-plugin-pwa, which generates
+// /sw.js (Workbox) and injects /registerSW.js into index.html at build time.
+//
+// This file used to ALSO register a hand-written /service-worker.js. Both
+// claimed scope '/', so each registration replaced the other on every page
+// load — the two workers fought for control, churning through install and
+// activate cycles and serving assets from whichever cache happened to win.
+// That is a good match for "it works after a refresh".
+//
+// The hand-written worker is gone, but devices that already installed it keep
+// it until it is explicitly removed, so retire it here. This can be deleted
+// once the fix has been live long enough for returning visitors to pick it up.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/service-worker.js')
-      .then(reg => {
-        if (import.meta.env.DEV) {
-          console.log('Service Worker registered:', reg);
-        }
-      })
-      .catch(err => {
-        if (import.meta.env.DEV) {
-          console.error('Service Worker error:', err);
-        }
-      });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      const scriptURL = registration.active?.scriptURL ?? '';
+      if (scriptURL.includes('/service-worker.js')) {
+        registration.unregister();
+      }
+    });
+  }).catch(() => {
+    /* nothing we can do about it here */
   });
+
+  // Drop the caches that worker built up. They were never versioned, so stale
+  // entries would otherwise outlive every future deploy.
+  if ('caches' in window) {
+    caches.keys().then((names) => {
+      names
+        .filter((name) => name.startsWith('sdms-cache-') || name.startsWith('sdms-static-'))
+        .forEach((name) => caches.delete(name));
+    }).catch(() => {
+      /* non-fatal */
+    });
+  }
 }
-// This code is for registering a service worker to enable offline capabilities and caching for the app.
-// It checks if service workers are supported in the browser, and if so, registers the service worker
-// when the window loads. The service worker file is expected to be located at '/service-worker.js'.
-// If the registration is successful, it logs a success message; otherwise, it logs an error message.
-// This is useful for Progressive Web Apps (PWAs) to enhance performance and provide offline functionality.
-// The service worker can cache assets and API responses, allowing the app to work offline or with
-// poor network conditions. It can also handle background sync and push notifications, improving user experience.
-// Make sure to create the service worker file and implement the caching logic as needed for your app

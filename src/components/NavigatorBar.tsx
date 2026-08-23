@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPhone,
@@ -12,18 +12,10 @@ import {
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
+import { useActiveCategories } from '@/hooks/useCategories';
 import clsx from 'clsx';
 
 const NAV_HEIGHT = 66;
-
-// Cache for categories data
-const categoriesCache = {
-  data: null,
-  timestamp: 0,
-  loading: false,
-};
-
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 interface CategoryDrawerProps {
   open: boolean;
@@ -118,69 +110,11 @@ type NavId = 'home' | 'categories' | 'cart' | 'call' | 'whatsapp';
 const MobileBottomNavigation = () => {
   const [activeTab, setActiveTab] = useState<NavId>('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [categories, setCategories] = useState<Array<{
-    id: string;
-    name: string;
-    slug?: string;
-    image_url?: string;
-    is_active: boolean;
-    count?: number;
-  }>>([]);
-  const [loading, setLoading] = useState(false);
+  // Shared with the homepage tiles and the products page: one request, one
+  // cache, and the retry policy from App.tsx.
+  const { categories, loading } = useActiveCategories();
   const navigate = useNavigate();
   const { itemCount } = useCart();
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const isCacheValid = useCallback(() => {
-    return (
-      categoriesCache.data &&
-      categoriesCache.timestamp &&
-      Date.now() - categoriesCache.timestamp < CACHE_DURATION
-    );
-  }, []);
-
-  const fetchCategories = useCallback(async () => {
-    if (isCacheValid()) {
-      setCategories(categoriesCache.data);
-      setLoading(false);
-      return;
-    }
-
-    if (categoriesCache.loading) return;
-    categoriesCache.loading = true;
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    abortControllerRef.current = new AbortController();
-    setLoading(true);
-
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name, slug, image_url, is_active')
-        .eq('is_active', true)
-        .order('name')
-        .abortSignal(abortControllerRef.current.signal);
-
-      if (error) throw error;
-
-      const filteredCategories = data || [];
-      categoriesCache.data = filteredCategories;
-      categoriesCache.timestamp = Date.now();
-      setCategories(filteredCategories);
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-      categoriesCache.loading = false;
-      abortControllerRef.current = null;
-    }
-  }, [isCacheValid]);
 
   const closeDrawer = useCallback(() => {
     setSidebarOpen(false);
@@ -196,7 +130,6 @@ const MobileBottomNavigation = () => {
       case 'categories':
         setSidebarOpen(true);
         document.body.style.overflow = 'hidden';
-        fetchCategories();
         break;
       case 'cart':
         navigate('/checkout');
@@ -208,7 +141,7 @@ const MobileBottomNavigation = () => {
         window.open('https://wa.me/256755869853', '_blank');
         break;
     }
-  }, [navigate, fetchCategories]);
+  }, [navigate]);
 
   const handleCategoryClick = useCallback((cat) => {
     const categoryParam = cat.slug || cat.name;
@@ -218,9 +151,6 @@ const MobileBottomNavigation = () => {
   useEffect(() => {
     return () => {
       document.body.style.overflow = '';
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
     };
   }, []);
 

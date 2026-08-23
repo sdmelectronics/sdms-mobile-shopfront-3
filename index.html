@@ -43,10 +43,19 @@
       }
       </script>
 
-<script src="https://checkout.flutterwave.com/v3.js"></script>
+    <!--
+      The Flutterwave checkout script used to be loaded here. It was a
+      parser-blocking <script> in <head>, so on any device where
+      checkout.flutterwave.com was slow or blocked the whole app was held up
+      before it could even start booting.
 
+      Every reference to FlutterwaveCheckout in src/ is currently commented
+      out, so it was costing every page load and buying nothing. If mobile
+      money checkout is re-enabled, load it with the defer attribute, or
+      inject it on demand from the checkout page, rather than blocking first
+      paint. The CSP in vercel.json already allows the host.
+    -->
 
-    
     <title>SDM Electronics - Quality Electronics in Uganda</title>
   </head>
   <body>
