@@ -11,8 +11,7 @@ import {
   Laptop,
   Watch
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useActiveCategories } from "@/hooks/useCategories";
 
 // Icon mapping for categories
 const iconMap = {
@@ -29,31 +28,7 @@ const iconMap = {
 };
 
 export const FeaturedCategories = () => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-
-        const { data, error } = await supabase
-          .from("categories")
-          .select("id, name, slug, image_url, is_active, count");
-
-        if (error) throw error;
-
-        const activeCategories = data.filter((category) => category.is_active);
-        setCategories(activeCategories);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);
+  const { categories, loading, isError, refetch } = useActiveCategories();
 
   const getIconForCategory = (categoryName) => {
     const key = categoryName.toLowerCase().replace(/\s+/g, '');
@@ -86,6 +61,19 @@ export const FeaturedCategories = () => {
               <div className="w-14 h-3 bg-warm-line rounded animate-pulse" />
             </div>
           ))}
+        </div>
+      ) : isError && categories.length === 0 ? (
+        /* Previously this rendered an empty grid and gave the user no clue
+           anything had failed, let alone a way to recover without reloading. */
+        <div className="bg-warm-surface border border-warm-line rounded-2xl py-8 px-4 text-center">
+          <p className="text-sm text-warm-muted mb-3">Couldn't load categories.</p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="text-sm font-semibold text-warm-accent hover:text-warm-accentPress transition-colors"
+          >
+            Try again
+          </button>
         </div>
       ) : (
         <div className="flex md:grid md:grid-cols-6 gap-3 md:gap-3.5 overflow-x-auto md:overflow-visible pb-1 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

@@ -1,39 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+const DEFAULT_TEXT =
+  '🔥 Welcome to SDM Electronics - Your trusted source for quality electronics in Uganda! 📱💻 Free delivery within Kampala 🔥';
+
 export const Marquee = () => {
-  const [marqueeText, setMarqueeText] = useState('🔥 Welcome to SDM Electronics - Your trusted source for quality electronics in Uganda! 📱💻 Free delivery within Kampala 🔥');
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    fetchMarqueeText();
-  }, []);
-
-  const fetchMarqueeText = async () => {
-    try {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['site-settings', 'marquee_text'],
+    queryFn: async () => {
+      // maybeSingle(), not single(): a missing settings row is a normal state,
+      // not an error worth retrying against.
       const { data, error } = await supabase
         .from('site_settings')
         .select('setting_value, is_active')
         .eq('setting_key', 'marquee_text')
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        if (import.meta.env.DEV) {
-          console.log('Using fallback marquee text');
-        }
-        return;
-      }
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
 
-      if (data && data.is_active && data.setting_value) {
-        setMarqueeText(data.setting_value);
-      }
-      setIsVisible(data?.is_active || false);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.log('Error fetching marquee text:', error);
-      }
-    }
-  };
+  const marqueeText = data?.setting_value || DEFAULT_TEXT;
+
+  // While loading — or if the lookup failed outright — fall back to the
+  // built-in banner rather than leaving a gap at the top of every page.
+  const isVisible = isLoading || isError ? true : Boolean(data?.is_active);
 
   if (!isVisible || !marqueeText) {
     return null;

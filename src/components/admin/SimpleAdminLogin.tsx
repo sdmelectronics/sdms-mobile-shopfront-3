@@ -23,11 +23,24 @@ export const SimpleAdminLogin = () => {
     setIsLoading(true);
 
     try {
-      const success = await signIn(email, password);
-      if (success) {
+      const result = await signIn(email, password);
+
+      if (result.ok) {
         navigate('/admin');
-      } else {
-        setError('Invalid username or password');
+        return;
+      }
+
+      // Never report "wrong password" for a correct password — the account
+      // that has no admin_users row authenticates fine and then fails here.
+      switch (result.reason) {
+        case 'not-an-admin':
+          setError('That account is not an admin. Ask an existing admin to grant access.');
+          break;
+        case 'network':
+          setError("Couldn't reach the server. Check your connection and try again.");
+          break;
+        default:
+          setError('Invalid email or password');
       }
     } catch (err) {
       setError('An error occurred during login');
@@ -55,13 +68,21 @@ export const SimpleAdminLogin = () => {
             
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
-                Username
+                Email
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="email"
-                  type="text"
+                  // Sign-in is by email. On phones a plain text input gets
+                  // autocapitalised and autocorrected, which silently corrupts
+                  // the address before it is ever submitted.
+                  type="email"
+                  inputMode="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter Email"
@@ -80,6 +101,7 @@ export const SimpleAdminLogin = () => {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"

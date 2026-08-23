@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,31 +27,31 @@ export const WarmHero = () => {
   const navigate = useNavigate();
   const onShop = () => navigate("/products");
 
-  const [slides, setSlides] = useState<BannerSlide[]>(fallbackSlides);
   const [current, setCurrent] = useState(0);
 
+  // React Query handles the retry/backoff here. The previous one-shot fetch
+  // left the hero stuck on the hard-coded fallback for the whole session if
+  // the single request happened to fail.
+  const { data } = useQuery<BannerSlide[]>({
+    queryKey: ["hero-banners"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("id, image_url, title, display_order")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as BannerSlide[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const slides = data && data.length > 0 ? data : fallbackSlides;
+
+  // Keep the index in range when the slide set changes underneath us.
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("banners")
-          .select("id, image_url, title, display_order")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
-        if (error) throw error;
-        if (active && data && data.length > 0) {
-          setSlides(data as BannerSlide[]);
-          setCurrent(0);
-        }
-      } catch (err) {
-        console.error("Error fetching hero banners:", err);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+    setCurrent(0);
+  }, [slides.length]);
 
   useEffect(() => {
     if (slides.length <= 1) return;

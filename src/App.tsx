@@ -28,8 +28,16 @@ const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      // Mobile networks drop requests routinely. A single immediate retry
+      // tends to fail for the same reason the first attempt did, so back off
+      // between attempts instead.
+      retry: 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
       refetchOnWindowFocus: false,
+      // Phones suspend sockets when the app is backgrounded or the user moves
+      // between wifi and mobile data. Without this, coming back to the tab
+      // leaves whatever failed while it was asleep permanently empty.
+      refetchOnReconnect: true,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     },

@@ -143,7 +143,9 @@ export const PromoBannerList: React.FC = () => {
     return (
       <div className="text-center py-8">
         <p className="text-red-600 mb-4">Error: {error}</p>
-        <Button onClick={refresh} variant="outline">
+        {/* Wrapped: refresh() is React Query's refetch, whose first argument is
+            RefetchOptions — passing the click event through breaks the call. */}
+        <Button onClick={() => refresh()} variant="outline">
           <RefreshCw className="w-4 h-4 mr-2" />
           Retry
         </Button>

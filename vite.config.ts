@@ -96,24 +96,18 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globIgnores: ['**/node_modules/@vercel/analytics/dist/next/**'],
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              // Fall back to cache quickly if the network is slow, instead of
-              // hanging on a stalled request.
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 60,
-                maxAgeSeconds: 60 * 60 // 1 hour — API data should not be served stale for long
-              },
-              cacheableResponse: {
-                // Only cache successful responses (drop opaque/status 0).
-                statuses: [200]
-              }
-            }
-          },
+          // NOTE: Supabase requests are deliberately NOT cached here.
+          //
+          // This used to be a NetworkFirst rule with networkTimeoutSeconds: 3
+          // and a one-hour expiry. On a slow connection — routine on mobile
+          // data — any request taking over 3s fell back to the cache and the
+          // shop rendered prices and stock up to an hour out of date, or
+          // nothing at all when the cache was cold. The cache key also ignores
+          // the Authorization header, so a signed-in admin's rows could be
+          // replayed to another visitor.
+          //
+          // React Query owns freshness and retries for this data (see the
+          // defaults in App.tsx), so let these requests reach the network.
           {
             urlPattern: /\.(png|jpg|jpeg|gif|svg|webp)$/,
             handler: 'CacheFirst',

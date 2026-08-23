@@ -9,9 +9,39 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error("Missing Supabase environment variables. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.");
 }
 
+/**
+ * Returns localStorage if it is actually usable, otherwise an in-memory stand-in.
+ *
+ * Merely *referencing* window.localStorage throws a SecurityError in browsers
+ * where site data is blocked (iOS Safari with cookies disabled, some in-app
+ * webviews, hardened privacy modes). At module scope that exception escapes
+ * before React ever mounts and white-screens the whole app — so it has to be
+ * probed defensively, not assumed. Falling back to memory costs the user a
+ * session that doesn't survive reload; throwing costs them the entire site.
+ */
+const getSafeStorage = (): Storage => {
+  try {
+    const probe = '__sb_storage_probe__';
+    window.localStorage.setItem(probe, '1');
+    window.localStorage.removeItem(probe);
+    return window.localStorage;
+  } catch {
+    console.warn('localStorage unavailable — falling back to in-memory auth storage.');
+    const store = new Map<string, string>();
+    return {
+      getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
+      setItem: (key: string, value: string) => { store.set(key, value); },
+      removeItem: (key: string) => { store.delete(key); },
+      clear: () => { store.clear(); },
+      key: (index: number) => Array.from(store.keys())[index] ?? null,
+      get length() { return store.size; },
+    } as Storage;
+  }
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: localStorage,
+    storage: getSafeStorage(),
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,

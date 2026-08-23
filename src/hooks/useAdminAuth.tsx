@@ -272,37 +272,47 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Handles authentication state changes
    */
-  const handleAuthStateChange = useCallback(async (event: string, session: any) => {
-    console.log('handleAuthStateChange called:', event);
-    switch (event) {
-      case 'SIGNED_OUT':
-        setAdmin(null);
-        clearPersistentSession();
-        break;
-        
-      case 'SIGNED_IN':
-        if (session?.user) {
-          const adminData = await fetchAdminData(session.user.id);
-          if (adminData) {
-            setAdmin(adminData);
-            // Preserve auto-login setting from stored session or default to false
-            const storedSession = getStoredAdminSession();
-            const autoLogin = storedSession?.autoLogin || false;
-            saveAdminSession(adminData, autoLogin);
-          } else {
-            // User signed in but is not an admin
-            await supabase.auth.signOut();
-          }
+  /**
+   * Handles Supabase auth events.
+   *
+   * MUST stay synchronous and MUST NOT await any Supabase call. Auth events
+   * are emitted while supabase-js holds its auth lock, and every PostgREST
+   * request needs that same lock to read the access token — so awaiting a
+   * query in here deadlocks the whole client until the page is reloaded.
+   * Defer the async work to a fresh task instead.
+   *
+   * Regression check: `npm run check:auth-deadlock`.
+   */
+  const handleAuthStateChange = useCallback((event: string, session: any) => {
+    if (event === 'SIGNED_OUT') {
+      setAdmin(null);
+      clearPersistentSession();
+      return;
+    }
+
+    if (event === 'SIGNED_IN') {
+      if (!session?.user) return;
+      setTimeout(async () => {
+        const adminData = await fetchAdminData(session.user.id);
+        if (adminData) {
+          setAdmin(adminData);
+          // Preserve auto-login setting from stored session or default to false
+          const storedSession = getStoredAdminSession();
+          const autoLogin = storedSession?.autoLogin || false;
+          saveAdminSession(adminData, autoLogin);
+        } else {
+          // User signed in but is not an admin
+          await supabase.auth.signOut();
         }
-        break;
-        
-      case 'TOKEN_REFRESHED':
-        // Update last activity on token refresh
-        updateLastActivity();
-        if (session?.user && admin) {
-          await refreshAdmin();
-        }
-        break;
+      }, 0);
+      return;
+    }
+
+    if (event === 'TOKEN_REFRESHED') {
+      updateLastActivity();
+      if (session?.user && admin) {
+        setTimeout(() => { void refreshAdmin(); }, 0);
+      }
     }
   }, []);
 
