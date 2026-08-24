@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WHATSAPP_NUMBER } from '@/lib/contact';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,23 @@ import { useCart } from "@/hooks/useCart";
 import { CartItems } from "@/components/CartItems";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * A v4 UUID for rows we create.
+ *
+ * crypto.randomUUID needs a secure context and is missing on older mobile
+ * Safari, so fall back rather than break checkout on someone's phone.
+ */
+const newId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 const Checkout = () => {
   const { items, total, clearCart, addToRecentProducts } = useCart();
@@ -60,20 +78,24 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // Create customer
-      const { data: customer, error: customerError } = await supabase
+      // Ids are generated here rather than read back from the database.
+      //
+      // Reading a row back after insert requires a SELECT policy, and the only
+      // way to grant that to an anonymous shopper is to make every order and
+      // every customer readable by everyone — which is exactly the leak this
+      // avoids. Generating the ids client-side lets the storefront write its
+      // order without ever being able to read anyone else's.
+      const customerId = newId();
+      const orderId = newId();
+
+      const { error: customerError } = await supabase
         .from('customers')
         .insert([{
+          id: customerId,
           first_name: customerData.firstName,
           phone: customerData.phone,
-          // last_name: customerData.lastName,
-          // email: customerData.email || null,
-           address: customerData.address || null,
-          // city: customerData.city || null,
-          // district: customerData.district || null,
-        }])
-        .select()
-        .single();
+          address: customerData.address || null,
+        }]);
 
       if (customerError) throw customerError;
 
@@ -84,38 +106,6 @@ const Checkout = () => {
       if (orderNumberError) throw orderNumberError;
 
       const orderTotal = total;
-
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert([{
-          customer_id: customer.id,
-          order_number: orderNumber,
-          subtotal: total,
-          shipping_fee: null,
-          total: orderTotal,
-          payment_method: 'whatsapp',
-          status: 'pending',
-          notes: customerData.notes || null,
-          
-        }])
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        product_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
 
       const itemsList = items.map(item =>
         `${item.name} - Qty: ${item.quantity} - ${formatPrice(item.price * item.quantity)}`
@@ -145,12 +135,39 @@ Total (excluding shipping): ${formatPrice(orderTotal)}
 
 ${customerData.notes ? `Notes: ${customerData.notes}` : ''}`;
 
-      const whatsappUrl = `https://wa.me/+256755869853?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 
-      await supabase
+      // The chat URL is stored with the order rather than patched in
+      // afterwards, so the storefront needs no UPDATE permission on orders at
+      // all — which is what stops anyone flipping an order to "delivered".
+      const { error: orderError } = await supabase
         .from('orders')
-        .update({ whatsapp_chat_url: whatsappUrl })
-        .eq('id', order.id);
+        .insert([{
+          id: orderId,
+          customer_id: customerId,
+          order_number: orderNumber,
+          subtotal: total,
+          shipping_fee: null,
+          total: orderTotal,
+          payment_method: 'whatsapp',
+          status: 'pending',
+          notes: customerData.notes || null,
+          whatsapp_chat_url: whatsappUrl,
+        }]);
+
+      if (orderError) throw orderError;
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(items.map(item => ({
+          order_id: orderId,
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+        })));
+
+      if (itemsError) throw itemsError;
 
       // Add purchased items to recent products
       addToRecentProducts(items);

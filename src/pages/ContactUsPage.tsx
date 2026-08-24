@@ -1,5 +1,6 @@
 
 import { MapPin, Phone, Mail, Clock, Star, MessageCircle, Headphones, Heart } from 'lucide-react';
+import { WHATSAPP_URL } from '@/lib/contact';
 
 
 const ContactUsPage = () => {
@@ -121,7 +122,7 @@ const ContactUsPage = () => {
                       </div>
                       <div className="mt-4">
                         <a 
-                          href="https://wa.me/256755869853" 
+                          href={WHATSAPP_URL} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-green-600 font-medium hover:text-green-700"
@@ -170,11 +171,11 @@ const ContactUsPage = () => {
                         </div>
                       </div>
                       <div className="mt-4">
-                        <a 
-                          href="mailto:info@sdmelectronics.ug" 
+                        <a
+                          href="mailto:sdmelectronics256@gmail.com"
                           className="inline-flex items-center text-orange-600 font-medium hover:text-orange-700"
                         >
-                          Send us an email →
+                          sdmelectronics256@gmail.com →
                         </a>
                       </div>
                     </div>

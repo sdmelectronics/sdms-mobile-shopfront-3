@@ -22,6 +22,8 @@ import { CategoryForm } from "@/components/admin/CategoryForm";
 import { BannerForm } from "@/components/admin/BannerForm";
 import { MarqueeForm } from "@/components/admin/MarqueeForm";
 import { PromoBannerList } from "@/components/admin/PromoBannerList";
+import { OrdersPanel } from "@/components/admin/OrdersPanel";
+import { InventoryPanel } from "@/components/admin/InventoryPanel";
 
 import { useSimpleAdminAuth } from "@/hooks/useSimpleAdminAuth";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -819,16 +821,24 @@ const Admin = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="products" className="space-y-3 sm:space-y-4">
+        <Tabs defaultValue="orders" className="space-y-3 sm:space-y-4">
           <TabsList
             className="
               flex flex-wrap w-full gap-1 sm:gap-0
               h-auto sm:h-10
-              justify-start sm:grid sm:grid-cols-7
+              justify-start sm:grid sm:grid-cols-9
               bg-transparent
               p-0
             "
           >
+            {/* Orders and Inventory lead: they are the day-to-day work, the rest
+                is content management done occasionally. */}
+            <TabsTrigger value="orders" className="flex-1 min-w-[120px] text-xs sm:text-sm h-8 sm:h-10">
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="flex-1 min-w-[120px] text-xs sm:text-sm h-8 sm:h-10">
+              Inventory
+            </TabsTrigger>
             <TabsTrigger value="products" className="flex-1 min-w-[120px] text-xs sm:text-sm h-8 sm:h-10">
               Products
             </TabsTrigger>
@@ -851,6 +861,26 @@ const Admin = () => {
               Ratings
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="orders" className="space-y-3 sm:space-y-4">
+            <div>
+              <h2 className="text-lg sm:text-2xl font-bold">Orders</h2>
+              <p className="text-sm text-warm-muted">
+                Every order placed on the site. Marking one delivered deducts its items from stock.
+              </p>
+            </div>
+            <OrdersPanel />
+          </TabsContent>
+
+          <TabsContent value="inventory" className="space-y-3 sm:space-y-4">
+            <div>
+              <h2 className="text-lg sm:text-2xl font-bold">Inventory</h2>
+              <p className="text-sm text-warm-muted">
+                Stock levels, low-stock alerts and a full history of every movement.
+              </p>
+            </div>
+            <InventoryPanel />
+          </TabsContent>
 
           <TabsContent value="products" className="space-y-3 sm:space-y-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">

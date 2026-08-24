@@ -1,5 +1,6 @@
 
 import { Link } from "react-router-dom";
+import { PHONE_NUMBERS, SHOP_ADDRESS, CONTACT_EMAIL } from '@/lib/contact';
 import { Smartphone, Mail, MapPin, Phone, Facebook, Twitter, Instagram } from "lucide-react";
 
 export const Footer = () => {
@@ -57,25 +58,26 @@ export const Footer = () => {
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-warm-accent mt-0.5 flex-shrink-0" />
                 <span className="text-gray-400">
-                  Arua Park Plaza, Shop C2-386<br />
-                  Kampala, Uganda
+                  {SHOP_ADDRESS.line1}<br />
+                  {SHOP_ADDRESS.line2}
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-warm-accent" />
                 <span className="text-gray-400">
-                  <a href="tel:+256755869853" className="hover:text-warm-accent transition-colors">
-                    0755 869 853
-                  </a>
-                  {" / "}
-                  <a href="tel:+256705095221" className="hover:text-warm-accent transition-colors">
-                    0705 095 221
-                  </a>
+                  {PHONE_NUMBERS.map((number, i) => (
+                    <span key={number.tel}>
+                      {i > 0 && " / "}
+                      <a href={`tel:${number.tel}`} className="hover:text-warm-accent transition-colors">
+                        {number.label}
+                      </a>
+                    </span>
+                  ))}
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-warm-accent" />
-                <span className="text-gray-400">sdmelectronics256@gmail.com</span>
+                <span className="text-gray-400">{CONTACT_EMAIL}</span>
               </div>
             </div>
           </div>
