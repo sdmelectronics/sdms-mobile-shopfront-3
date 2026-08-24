@@ -22,6 +22,8 @@ interface Product {
   images: string[];
   video_url?: string;
   stock_quantity: number;
+  cost_price?: number | null;
+  reorder_level?: number;
   is_active: boolean;
   is_featured: boolean;
   is_preorder?: boolean;
@@ -57,6 +59,8 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
     short_description: '',
     images: [],
     stock_quantity: 0,
+    cost_price: null,
+    reorder_level: 0,
     is_active: true,
     is_featured: false,
     is_preorder: false,
@@ -235,11 +239,21 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
     try {
       const { categories, ...cleanFormData } = formData as any;
 
+      // Stock is owned by the stock_movements ledger, not by this form.
+      // Writing stock_quantity directly here would desynchronise the cached
+      // total from its ledger, so the intended level is pulled out and applied
+      // as a movement below instead.
+      const intendedStock = Number(cleanFormData.stock_quantity) || 0;
+      delete cleanFormData.stock_quantity;
+
       const productData = {
         ...cleanFormData,
         price: Number(cleanFormData.price),
         original_price: cleanFormData.original_price ? Number(cleanFormData.original_price) : null,
-        stock_quantity: Number(cleanFormData.stock_quantity),
+        cost_price: cleanFormData.cost_price === '' || cleanFormData.cost_price === null || cleanFormData.cost_price === undefined
+          ? null
+          : Number(cleanFormData.cost_price),
+        reorder_level: Number(cleanFormData.reorder_level) || 0,
         category_id: cleanFormData.category_id || null,
         specifications: cleanFormData.specifications
           ? JSON.parse(cleanFormData.specifications)
@@ -260,16 +274,50 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
 
         if (error) throw error;
 
+        // Changing the stock figure is recorded as a correction, so the change
+        // is visible in the product's history rather than silently overwriting
+        // the running total.
+        const currentStock = Number(product.stock_quantity) || 0;
+        const difference = intendedStock - currentStock;
+
+        if (difference !== 0) {
+          const { error: movementError } = await supabase.from('stock_movements').insert({
+            product_id: product.id,
+            delta: difference,
+            reason: 'correction',
+            note: 'Adjusted while editing the product',
+            actor_email: admin?.username ?? null,
+          });
+          if (movementError) throw movementError;
+        }
+
         toast({
           title: "Success",
-          description: "Product updated successfully",
+          description: difference !== 0
+            ? `Product updated. Stock corrected by ${difference > 0 ? '+' : ''}${difference}.`
+            : "Product updated successfully",
         });
       } else {
-        const { error } = await supabase
+        // New products are inserted with zero stock and then given an opening
+        // balance, so their very first unit is explained by the ledger too.
+        const { data: created, error } = await supabase
           .from('products')
-          .insert([productData]);
+          .insert([{ ...productData, stock_quantity: 0 }])
+          .select('id')
+          .single();
 
         if (error) throw error;
+
+        if (created?.id && intendedStock !== 0) {
+          const { error: movementError } = await supabase.from('stock_movements').insert({
+            product_id: created.id,
+            delta: intendedStock,
+            reason: 'opening_balance',
+            note: 'Stock recorded when the product was created',
+            actor_email: admin?.username ?? null,
+          });
+          if (movementError) throw movementError;
+        }
 
         toast({
           title: "Success",
@@ -346,6 +394,21 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="cost_price">Cost Price (UGX)</Label>
+              <Input
+                id="cost_price"
+                type="number"
+                value={formData.cost_price ?? ''}
+                onChange={(e) => handleInputChange('cost_price', e.target.value)}
+                placeholder="What you paid per unit"
+              />
+              <p className="text-xs text-warm-faint">
+                Used to work out profit. Leave blank if unknown — the product is
+                then left out of profit figures rather than counted as free.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="stock_quantity">Stock Quantity *</Label>
               <Input
                 id="stock_quantity"
@@ -354,6 +417,23 @@ export const ProductForm = ({ product, categories, onClose, onSave }: ProductFor
                 onChange={(e) => handleInputChange('stock_quantity', e.target.value)}
                 required
               />
+              <p className="text-xs text-warm-faint">
+                Changing this records a stock correction in the product's history.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reorder_level">Low-stock alert at</Label>
+              <Input
+                id="reorder_level"
+                type="number"
+                value={formData.reorder_level ?? 0}
+                onChange={(e) => handleInputChange('reorder_level', e.target.value)}
+                placeholder="0"
+              />
+              <p className="text-xs text-warm-faint">
+                Flags the product in Inventory once stock falls to this level.
+              </p>
             </div>
 
             <div className="space-y-2">

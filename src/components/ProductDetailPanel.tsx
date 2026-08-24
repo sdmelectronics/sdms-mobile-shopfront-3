@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WHATSAPP_URL } from '@/lib/contact';
 import { Link } from "react-router-dom";
 import { X, Star, Minus, Plus, ShoppingCart, Truck, ShieldCheck, MessageCircle } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
@@ -206,7 +207,7 @@ export const ProductDetailPanel = ({ product, open, onClose }: PanelProps) => {
                     <span className="text-[11px] font-semibold text-warm-ink leading-tight">Genuine<br />warranty</span>
                   </div>
                   <a
-                    href="https://wa.me/256755869853"
+                    href={WHATSAPP_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex flex-col items-center text-center gap-1.5 rounded-xl border border-warm-line px-2 py-3 hover:border-warm-accent/40 transition"
