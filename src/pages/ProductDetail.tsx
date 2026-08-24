@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getProductRating, generateSingleProductRating } from '@/lib/ratingUtils';
 import { CallMenu } from '@/components/CallMenu';
 import { WHATSAPP_URL } from '@/lib/contact';
+import { RelatedProducts } from '@/components/RelatedProducts';
 
 // Lazy load heavy components with preload
 const SpecificationsCard = lazy(() => 
@@ -707,6 +708,14 @@ export default function ProductDetail() {
           <SpecificationsCard specifications={product.specifications} />
         </Suspense>
       )}
+
+      {/* Placed after the specifications so it catches people who have finished
+          reading, rather than distracting them mid-decision. */}
+      <RelatedProducts
+        productId={product.id}
+        categoryName={product.categories?.name}
+        categorySlug={product.categories?.slug}
+      />
     </div>
   );
 }
