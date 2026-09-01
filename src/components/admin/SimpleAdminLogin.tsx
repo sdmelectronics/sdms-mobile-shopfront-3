@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSimpleAdminAuth } from '@/hooks/useSimpleAdminAuth';
+import { getRememberedSkewMinutes } from '@/lib/clockSkew';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,9 +14,18 @@ export const SimpleAdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [clockSkewMinutes, setClockSkewMinutes] = useState<number | null>(null);
+
   const { signIn } = useSimpleAdminAuth();
   const navigate = useNavigate();
+
+  // A wrong device clock makes tokens look expired and gets the user signed
+  // out shortly after logging in, on that machine only. It is invisible and
+  // baffling from the user's side, so if the last sign-in saw a bad clock, say
+  // so plainly here — this is the screen they get bounced back to.
+  useEffect(() => {
+    setClockSkewMinutes(getRememberedSkewMinutes());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +73,18 @@ export const SimpleAdminLogin = () => {
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {clockSkewMinutes !== null && (
+              <Alert>
+                <AlertDescription>
+                  <strong>This device's clock is wrong.</strong> It is about{' '}
+                  {Math.abs(clockSkewMinutes)} minute{Math.abs(clockSkewMinutes) === 1 ? '' : 's'}{' '}
+                  {clockSkewMinutes > 0 ? 'ahead of' : 'behind'} the correct time, which will sign
+                  you out shortly after you log in. Set the date and time to update automatically,
+                  then reload this page.
+                </AlertDescription>
               </Alert>
             )}
             

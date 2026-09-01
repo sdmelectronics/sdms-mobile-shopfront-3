@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { measureSkewFromToken, rememberSkew } from '@/lib/clockSkew';
 
 const SESSION_KEY = 'simple_admin_session';
 
@@ -85,9 +86,31 @@ const lookupAdmin = async (userId: string): Promise<AdminLookup> => {
     return { status: 'error' };
   }
 
-  if (!data) return { status: 'not-admin' };
+  if (data) {
+    return { status: 'admin', user: { username: data.email, isAuthenticated: true } };
+  }
 
-  return { status: 'admin', user: { username: data.email, isAuthenticated: true } };
+  // Zero rows is ambiguous and must NOT be taken at face value.
+  //
+  // The RLS policy on admin_users is `id = auth.uid()`, so if the access token
+  // is not accepted for any reason — expired, a skewed device clock, a refresh
+  // that has not landed yet — PostgREST returns 0 rows and NO error. Treating
+  // that as "not an admin" turns a momentary token problem into a deliberate,
+  // permanent sign-out, which is exactly how a working admin gets thrown back
+  // to the login page ~30s after logging in (auth-js runs its first refresh
+  // tick at 30s).
+  //
+  // getUser() validates the token against the server, so it can tell the two
+  // apart: no valid user means transient, a valid user with no row means
+  // genuinely not an admin.
+  const { data: userCheck, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userCheck?.user) {
+    console.warn('admin lookup returned no row and the session could not be verified — treating as transient, not signing out.');
+    return { status: 'error' };
+  }
+
+  return { status: 'not-admin' };
 };
 
 export const SimpleAdminAuthProvider = ({ children }: { children: ReactNode }) => {
@@ -201,6 +224,11 @@ export const SimpleAdminAuthProvider = ({ children }: { children: ReactNode }) =
       }
 
       if (!data.user) return { ok: false, reason: 'invalid-credentials' };
+
+      // Record how far this device's clock is from the token it was just
+      // issued. A large gap is why an otherwise valid login gets dropped about
+      // 30 seconds later, and the login screen shows it after the bounce.
+      rememberSkew(measureSkewFromToken(data.session?.access_token));
 
       // Credentials were accepted. Anything that fails past this point is an
       // authorisation or connectivity problem, NOT a bad password.
